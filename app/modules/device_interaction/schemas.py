@@ -40,7 +40,7 @@ class DeviceResponse(DeviceBase):
 
 class SyslogConfigPayload(BaseModel):
     target_host: IPvAnyAddress = Field(..., description="IP address of the Syslog server")
-    target_port: int = Field(default=514, gt=0, le=65535, description="Port of the Syslog server")
+    target_port: int = Field(default=1514, gt=0, le=65535, description="Port of the Syslog server")
     action_name_prefix: str = Field(default="siem", description="Prefix for logging action and rule names on Mikrotik")
     topics: str = Field(default="info,error,warning,critical,firewall", description="Comma-separated list of topics to log")
 

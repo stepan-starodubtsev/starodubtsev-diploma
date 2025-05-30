@@ -88,11 +88,9 @@ class DeviceService:
                 if os_version_from_device is not None: os_to_update_in_db = os_version_from_device
                 effective_os_for_log = os_version_from_device if os_version_from_device is not None else initial_os_version
                 print(f"Device {device_db.name} (OS: {effective_os_for_log}) - Configuring syslog...")
-                safe_name_prefix = "".join(
-                    c if c.isalnum() else "_" for c in device_db.name) if device_db.name else str(device_db.id)
                 success = connector.configure_syslog(target_host=str(syslog_config.target_host),
                                                      target_port=syslog_config.target_port,
-                                                     action_name_prefix=f"{syslog_config.action_name_prefix}_{safe_name_prefix}",
+                                                     action_name_prefix=f"siemlog",
                                                      topics=syslog_config.topics)
                 if success:
                     device_db.syslog_configured_by_siem = True; final_status = DeviceStatusEnum.REACHABLE; operation_successful = True; print(

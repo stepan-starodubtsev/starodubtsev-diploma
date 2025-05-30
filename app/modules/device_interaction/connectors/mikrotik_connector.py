@@ -94,27 +94,49 @@ class MikrotikConnector(BaseConnector):
         return result[0] if result else None
 
     def configure_syslog(self, target_host: str, target_port: int, action_name_prefix: str, topics: str) -> bool:
-        action_name = f"{action_name_prefix}_syslog"  # Унікальне ім'я дії
+        action_name = f"{action_name_prefix}Syslog"
         try:
             # 1. Налаштувати/оновити syslog action
             existing_actions = self._internal_execute_command("/system/logging/action", command_name="get",
                                                               **{"?name": action_name})
-            action_params = {"name": action_name, "target": "remote", "remote": target_host, "remote-port": target_port}
+
+            # Перетворюємо target_port на рядок
+            action_params = {
+                "name": action_name,
+                "target": "remote",
+                "remote": target_host,  # target_host вже є рядком
+                "remote-port": str(target_port)  # <--- ОСЬ ТУТ ВИПРАВЛЕННЯ
+            }
+
             if existing_actions:
-                action_id = existing_actions[0].get(".id")
-                self._internal_execute_command("/system/logging/action", command_name="set",
-                                               **{".id": action_id, **action_params})
+                action_id = existing_actions[0].get("id")
+                # Переконуємося, що action_id не None перед використанням
+                if action_id:
+                    self._internal_execute_command("/system/logging/action", command_name="set",
+                                                   **{".id": action_id, **action_params})
+                else:
+                    # Якщо action_id не знайдено, можливо, потрібно видалити стару дію (якщо логіка це передбачає) і додати нову
+                    # Або просто додати, ризикуючи дублікатом, якщо get не повернув id, але дія є
+                    print(
+                        f"Warning: Could not find .id for existing syslog action '{action_name}'. Attempting to add new one.")
+                    self._internal_execute_command("/system/logging/action", command_name="add", **action_params)
             else:
                 self._internal_execute_command("/system/logging/action", command_name="add", **action_params)
 
             # 2. Налаштувати/оновити правило логування syslog
-            rule_prefix = f"{action_name_prefix}_rule"
+            rule_prefix = f"{action_name_prefix}_rule"  # Використовуємо action_name_prefix для правила також
             existing_rules = self._internal_execute_command("/system/logging", command_name="get",
                                                             **{"?action": action_name, "?prefix": rule_prefix})
             rule_params = {"topics": topics, "action": action_name, "prefix": rule_prefix}
             if existing_rules:
-                rule_id = existing_rules[0].get(".id")
-                self._internal_execute_command("/system/logging", command_name="set", **{".id": rule_id, **rule_params})
+                rule_id = existing_rules[0].get("id")
+                if rule_id:
+                    self._internal_execute_command("/system/logging", command_name="set",
+                                                   **{".id": rule_id, **rule_params})
+                else:
+                    print(
+                        f"Warning: Could not find .id for existing syslog rule with prefix '{rule_prefix}'. Attempting to add new one.")
+                    self._internal_execute_command("/system/logging", command_name="add", **rule_params)
             else:
                 self._internal_execute_command("/system/logging", command_name="add", **rule_params)
             return True
