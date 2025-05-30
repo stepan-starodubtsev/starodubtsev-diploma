@@ -1,0 +1,99 @@
+version: '3.8'
+
+services:
+  # PostgreSQL База Даних
+  postgres_db:
+    image: postgres:15-alpine # Рекомендую використовувати конкретну версію
+    container_name: siem_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-siem_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-siem_strong_password}
+      POSTGRES_DB: ${POSTGRES_DB:-siem_db}
+      PGDATA: /var/lib/postgresql/data/pgdata # Важливо для коректної роботи volume
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/pgdata # Зберігання даних PostgreSQL
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432" # Мапінг порту на хост
+    networks:
+      - siem_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-siem_user} -d ${POSTGRES_DB:-siem_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PgAdmin - Інструмент для управління PostgreSQL
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: siem_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin_strong_password}
+      PGADMIN_LISTEN_PORT: 80 # Внутрішній порт pgAdmin
+    ports:
+      - "${PGADMIN_PORT:-5050}:80" # Мапінг порту на хост
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin # Зберігання налаштувань pgAdmin
+    networks:
+      - siem_network
+    depends_on:
+      postgres_db:
+        condition: service_healthy # Чекає, доки postgres_db буде готовий
+    restart: unless-stopped
+
+  # Elasticsearch - Сховище для логів та індикаторів
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4 # Використовуй конкретну версію!
+    container_name: siem_elasticsearch
+    environment:
+      - discovery.type=single-node # Для розробки на одній ноді
+      - ES_JAVA_OPTS=${ES_JAVA_OPTS:--Xms1g -Xmx1g} # Налаштування пам'яті, можна змінити
+      - xpack.security.enabled=false # ВИМКНЕНО безпеку для спрощення розробки. УВАГА: НЕ для продакшену!
+      - TAKE_FILE_OWNERSHIP=true # Іноді потрібно для виправлення прав доступу до volume
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data # Зберігання даних Elasticsearch
+    ports:
+      - "${ELASTICSEARCH_PORT:-9200}:9200" # Порт API
+      # - "9300:9300" # Порт для комунікації між нодами (не потрібен для single-node)
+    networks:
+      - siem_network
+    restart: unless-stopped
+    healthcheck:
+      # Простий healthcheck, оскільки безпека вимкнена
+      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Kibana - Інструмент для візуалізації даних з Elasticsearch
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.13.4 # Версія має СПІВПАДАТИ з Elasticsearch!
+    container_name: siem_kibana
+    environment:
+      ELASTICSEARCH_HOSTS: '["http://elasticsearch:9200"]' # Використовуємо ім'я сервісу elasticsearch
+      # Якщо б безпека Elasticsearch була увімкнена:
+      # ELASTICSEARCH_USERNAME: elastic
+      # ELASTICSEARCH_PASSWORD: your_elastic_password
+    ports:
+      - "${KIBANA_PORT:-5601}:5601" # Мапінг порту на хост
+    networks:
+      - siem_network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy # Чекає, доки elasticsearch буде готовий
+    restart: unless-stopped
+
+# Визначення томів (volumes) для зберігання даних
+volumes:
+  postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+
+# Визначення мережі для взаємодії контейнерів
+networks:
+  siem_network:
+    driver: bridge
