@@ -47,7 +47,7 @@ class NetflowUDPCollector:
             self.server.server_close()
             if self.thread and self.thread.is_alive(): # Перевірка, чи потік ще живий
                 self.thread.join(timeout=5)
-            self.server = None; self.thread = None
+            self.server = None self.thread = None
             print("NetFlow UDP Collector stopped.")
         else:
             print("NetFlow UDP Collector is not running.")

@@ -58,8 +58,8 @@ class DataIngestionService:
                 print(f"Netflow components initialized for {netflow_host}:{netflow_port}.")
             except Exception as e:
                 print(f"ERROR: Failed to initialize Netflow components: {e}")
-                self.netflow_parser = None;
-                self.netflow_collector = None;
+                self.netflow_parser = None
+                self.netflow_collector = None
                 self.netflow_normalizer = None
         else:
             print("WARNING: NetFlow processing is disabled (library not available).")
@@ -188,14 +188,14 @@ if __name__ == '__main__':
         print(
             f"Data Ingestion Service running. Syslog on port {SYSLOG_LISTEN_PORT}, NetFlow on port {NETFLOW_LISTEN_PORT}.")
         print("Press Ctrl+C to stop Data Ingestion Service.")
-        while True: import time; time.sleep(1)
+        while True: import time time.sleep(1)
     except KeyboardInterrupt:
         print("\nData Ingestion Service shutdown requested by user...")
     except Exception as e:
-        print(f"An unexpected error occurred: {e}");
-        import traceback;
+        print(f"An unexpected error occurred: {e}")
+        import traceback
 
         traceback.print_exc()
     finally:
-        service.stop_listeners();
+        service.stop_listeners()
         print("Data Ingestion Service shut down completely.")

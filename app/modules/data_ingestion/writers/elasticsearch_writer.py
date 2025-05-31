@@ -21,8 +21,8 @@ class ElasticsearchWriter:
         # --- Встановлюємо заголовки для сумісності з ES 8.x ---
         # Це має вирішити проблему "Accept version must be either version 8 or 7, but found 9"
         headers = {
-            'Accept': 'application/vnd.elasticsearch+json; compatible-with=8',
-            'Content-Type': 'application/vnd.elasticsearch+json; compatible-with=8'
+            'Accept': 'application/vnd.elasticsearch+json compatible-with=8',
+            'Content-Type': 'application/vnd.elasticsearch+json compatible-with=8'
         }
         client_params['headers'] = headers
         # ---------------------------------------------------------

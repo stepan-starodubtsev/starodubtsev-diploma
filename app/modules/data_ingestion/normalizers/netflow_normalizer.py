@@ -200,7 +200,7 @@ class NetflowNormalizer:
         except Exception as e:
             print(f"NetflowNormalizer: Unexpected error: {e}")
             print(f"Problematic flow_data (original): {flow_data}")
-            import traceback;
+            import traceback
             traceback.print_exc()
             return None
 

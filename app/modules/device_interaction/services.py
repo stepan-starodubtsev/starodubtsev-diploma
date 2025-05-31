@@ -40,17 +40,17 @@ class DeviceService:
         db.add(device_db)
         if commit:
             try:
-                db.commit(); db.refresh(device_db)
+                db.commit() db.refresh(device_db)
             except Exception as e:
-                db.rollback(); print(f"Error committing status update for {device_db.name}: {e}")
+                db.rollback() print(f"Error committing status update for {device_db.name}: {e}")
 
     # ... (get_device_status_and_update_db, configure_syslog_on_device, configure_netflow_on_device, get_firewall_rules_on_device - з виправленою логікою os_version)
     def get_device_status_and_update_db(self, db: Session, device_id: int) -> Optional[schemas.DeviceResponse]:
         device_db = db.query(Device).filter(Device.id == device_id).first()
-        if not device_db: print(f"Device with ID {device_id} not found for status update."); return None
-        initial_os_version = device_db.os_version;
+        if not device_db: print(f"Device with ID {device_id} not found for status update.") return None
+        initial_os_version = device_db.os_version
         os_version_from_device: Optional[str] = None
-        final_status = DeviceStatusEnum.UNKNOWN;
+        final_status = DeviceStatusEnum.UNKNOWN
         os_to_update_in_db: Optional[str] = initial_os_version
         try:
             connector = self._get_connector(device_db)
@@ -65,7 +65,7 @@ class DeviceService:
             print(f"Could not connect or execute command for status update on device {device_db.name}: {e}")
             final_status = DeviceStatusEnum.UNREACHABLE
         except ValueError as ve:
-            final_status = DeviceStatusEnum.ERROR;
+            final_status = DeviceStatusEnum.ERROR
             print(f"ValueError during status update for {device_db.name}: {ve}")
         self._update_device_status_and_info(db, device_db, final_status, os_version=os_to_update_in_db, commit=True)
         return schemas.DeviceResponse.from_orm(device_db)
@@ -73,9 +73,9 @@ class DeviceService:
     def configure_syslog_on_device(self, db: Session, device_id: int,
                                    syslog_config: schemas.SyslogConfigPayload) -> bool:
         device_db = self._get_device_or_fail(db, device_id)
-        operation_successful = False;
+        operation_successful = False
         initial_os_version = device_db.os_version
-        os_version_from_device: Optional[str] = None;
+        os_version_from_device: Optional[str] = None
         final_status = DeviceStatusEnum.ERROR
         os_to_update_in_db: Optional[str] = initial_os_version
         self._update_device_status_and_info(db, device_db, DeviceStatusEnum.CONFIGURING, os_version=initial_os_version,
@@ -93,7 +93,7 @@ class DeviceService:
                                                      action_name_prefix=f"siemlog",
                                                      topics=syslog_config.topics)
                 if success:
-                    device_db.syslog_configured_by_siem = True; final_status = DeviceStatusEnum.REACHABLE; operation_successful = True; print(
+                    device_db.syslog_configured_by_siem = True final_status = DeviceStatusEnum.REACHABLE operation_successful = True print(
                         f"Syslog configured successfully for {device_db.name}")
                 else:
                     print(f"Syslog configuration reported failure by connector for {device_db.name}")
@@ -107,9 +107,9 @@ class DeviceService:
     def configure_netflow_on_device(self, db: Session, device_id: int,
                                     netflow_config: schemas.NetflowConfigPayload) -> bool:
         device_db = self._get_device_or_fail(db, device_id)
-        operation_successful = False;
+        operation_successful = False
         initial_os_version = device_db.os_version
-        os_version_from_device: Optional[str] = None;
+        os_version_from_device: Optional[str] = None
         final_status = DeviceStatusEnum.ERROR
         os_to_update_in_db: Optional[str] = initial_os_version
         self._update_device_status_and_info(db, device_db, DeviceStatusEnum.CONFIGURING, os_version=initial_os_version,
@@ -127,7 +127,7 @@ class DeviceService:
                                                       interfaces=netflow_config.interfaces,
                                                       version=netflow_config.version)
                 if success:
-                    device_db.netflow_configured_by_siem = True; final_status = DeviceStatusEnum.REACHABLE; operation_successful = True; print(
+                    device_db.netflow_configured_by_siem = True final_status = DeviceStatusEnum.REACHABLE operation_successful = True print(
                         f"Netflow configured successfully for {device_db.name}")
                 else:
                     print(f"Netflow configuration reported failure by connector for {device_db.name}")
@@ -141,9 +141,9 @@ class DeviceService:
     def get_firewall_rules_on_device(self, db: Session, device_id: int, chain: Optional[str] = None) -> List[
         Dict[str, Any]]:
         device_db = self._get_device_or_fail(db, device_id)
-        rules: List[Dict[str, Any]] = [];
+        rules: List[Dict[str, Any]] = []
         initial_os_version = device_db.os_version
-        os_version_from_device: Optional[str] = None;
+        os_version_from_device: Optional[str] = None
         final_status = DeviceStatusEnum.ERROR
         os_to_update_in_db: Optional[str] = initial_os_version
         try:
@@ -268,8 +268,8 @@ class DeviceService:
                            username=device_create.username, encrypted_password=encrypted_pass,
                            device_type=device_create.device_type, is_enabled=device_create.is_enabled,
                            status=DeviceStatusEnum.UNKNOWN)
-        db.add(db_device);
-        db.commit();
+        db.add(db_device)
+        db.commit()
         db.refresh(db_device)
         return db_device
 
@@ -287,16 +287,16 @@ class DeviceService:
         if not device_db: raise ValueError(f"Device with ID {device_id} not found for update.")
         update_data = device_update.model_dump(exclude_unset=True)
         if "password" in update_data and update_data["password"] is not None:
-            device_db.encrypted_password = encrypt_data(update_data["password"]);
+            device_db.encrypted_password = encrypt_data(update_data["password"])
             del update_data["password"]
         for key, value in update_data.items(): setattr(device_db, key, value)
         if "is_enabled" in update_data and not update_data["is_enabled"]: device_db.status = DeviceStatusEnum.UNKNOWN
-        db.add(device_db);
-        db.commit();
+        db.add(device_db)
+        db.commit()
         db.refresh(device_db)
         return schemas.DeviceResponse.from_orm(device_db)
 
     def delete_device(self, db: Session, device_id: int) -> bool:
         device_db = db.query(Device).filter(Device.id == device_id).first()
-        if device_db: db.delete(device_db); db.commit(); return True
+        if device_db: db.delete(device_db) db.commit() return True
         return False

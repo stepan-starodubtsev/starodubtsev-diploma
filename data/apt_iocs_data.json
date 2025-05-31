@@ -1,0 +1,456 @@
+[
+  {
+    "apt_id_placeholder": "UAC-0028",
+    "name": "APT28",
+    "aliases": [
+      "Fancy Bear",
+      "Strontium",
+      "Sofacy",
+      "UAC-0028"
+    ],
+    "description": "Висококваліфіковане кібершпигунське угруповання, пов'язане з ГРУ РФ. Атакує урядові, військові, оборонні та медійні організації.",
+    "primary_motivation": "espionage",
+    "sophistication": "high",
+    "references": [
+      "https://cert.gov.ua/"
+    ],
+    "iocs": [
+      {
+        "value": "194.126.178.8",
+        "type": "ipv4-addr",
+        "description": "Сервер управління/WebDAV (APT28)",
+        "tags": [
+          "c2",
+          "webdav"
+        ]
+      },
+      {
+        "value": "88.209.251.6",
+        "type": "ipv4-addr",
+        "description": "Сервер управління (APT28)",
+        "tags": [
+          "c2"
+        ]
+      },
+      {
+        "value": "czyrqdnvpujmmjkfhhvs4knf1av02demj.oast.fun",
+        "type": "domain-name",
+        "description": "Сервер управління (OCEANMAP C2, APT28)",
+        "tags": [
+          "c2",
+          "oceanmap"
+        ]
+      },
+      {
+        "value": "nas-files.firstcloudit.com",
+        "type": "domain-name",
+        "description": "Сервер управління (OCEANMAP C2, APT28)",
+        "tags": [
+          "c2",
+          "oceanmap"
+        ]
+      },
+      {
+        "value": "hxxp://194[.]126.178.8/webdav/wody[.]pdf",
+        "type": "url",
+        "description": "Завантаження шкідливого файлу (APT28)",
+        "tags": [
+          "malware_delivery"
+        ]
+      },
+      {
+        "value": "hxxps://ua-calendar.firstcloudit[.]com/",
+        "type": "url",
+        "description": "Сервер управління (OCEANMAP C2, APT28)",
+        "tags": [
+          "c2",
+          "oceanmap"
+        ]
+      },
+      {
+        "value": "eafa11070f213f16efc030f625a423d1",
+        "type": "file-hash-md5",
+        "description": "Nuclear Terrorism A Very Real Threat.rtf (APT28)",
+        "tags": [
+          "malware_file",
+          "rtf"
+        ]
+      },
+      {
+        "value": "ab6c70af19f7d41a443feb8ccb57d264",
+        "type": "file-hash-md5",
+        "description": "article.html (APT28)",
+        "tags": [
+          "malware_file",
+          "html"
+        ]
+      },
+      {
+        "value": "daaa271cee97853bf4e235b55cb34c1f03ea6f8d3c958f86728d41f418b0bf01",
+        "type": "file-hash-sha256",
+        "description": "Nuclear Terrorism A Very Real Threat.rtf (APT28)",
+        "tags": [
+          "malware_file",
+          "rtf"
+        ]
+      },
+      {
+        "value": "14ae02c521b85e60b11393ffc0da5e25946c4775a84995800b73398df4bceffb",
+        "type": "file-hash-sha256",
+        "description": "article.html (APT28)",
+        "tags": [
+          "malware_file",
+          "html"
+        ]
+      }
+    ]
+  },
+  {
+    "apt_id_placeholder": "UAC-0010",
+    "name": "Gamaredon",
+    "aliases": [
+      "Armageddon",
+      "Shuckworm",
+      "UAC-0010"
+    ],
+    "description": "Одна з найактивніших загроз для України, пов'язують з ФСБ РФ. Основний вектор - цільові фішингові розсилки.",
+    "primary_motivation": "espionage",
+    "sophistication": "medium",
+    "references": [],
+    "iocs": [
+      {
+        "value": "194.38.21.12",
+        "type": "ipv4-addr",
+        "description": "X-Sender-IP (Gamaredon)",
+        "tags": [
+          "c2",
+          "sender_ip"
+        ]
+      },
+      {
+        "value": "164.92.166.107",
+        "type": "ipv4-addr",
+        "description": "C2 (Gamaredon)",
+        "tags": [
+          "c2"
+        ]
+      },
+      {
+        "value": "45.63.114.110",
+        "type": "ipv4-addr",
+        "description": "C2 (Gamaredon)",
+        "tags": [
+          "c2"
+        ]
+      },
+      {
+        "value": "jokotras.ru",
+        "type": "domain-name",
+        "description": "C2 (Gamaredon)",
+        "tags": [
+          "c2"
+        ]
+      },
+      {
+        "value": "a0698649.xsph.ru",
+        "type": "domain-name",
+        "description": "C2 (Gamaredon)",
+        "tags": [
+          "c2"
+        ]
+      },
+      {
+        "value": "a0698262.xsph.ru",
+        "type": "domain-name",
+        "description": "C2 (Gamaredon)",
+        "tags": [
+          "c2"
+        ]
+      },
+      {
+        "value": "hxxp://jokotras[.]ru/su/faicon.ico",
+        "type": "url",
+        "description": "Payload URL (Gamaredon)",
+        "tags": [
+          "payload_delivery"
+        ]
+      },
+      {
+        "value": "hxxp://prefer[.]jokotras.ru/hear/nephew/su",
+        "type": "url",
+        "description": "C2 URL (Gamaredon)",
+        "tags": [
+          "c2"
+        ]
+      },
+      {
+        "value": "hxxp://tiloraso[.]ru/get.php",
+        "type": "url",
+        "description": "Payload URL (Gamaredon)",
+        "tags": [
+          "payload_delivery"
+        ]
+      },
+      {
+        "value": "hxxp://a0698649.xsph[.]ru/nervous/Queen.xml",
+        "type": "url",
+        "description": "C2 URL (Gamaredon)",
+        "tags": [
+          "c2"
+        ]
+      }
+    ]
+  },
+  {
+    "apt_id_placeholder": "Sandworm_UAC-0165",
+    "name": "Sandworm",
+    "aliases": [
+      "Voodoo Bear",
+      "Telebots",
+      "UAC-0165",
+      "UAC-0133",
+      "UAC-0004"
+    ],
+    "description": "APT-угруповання, пов'язане з ГРУ РФ, відоме руйнівними атаками на критичну інфраструктуру.",
+    "primary_motivation": "sabotage",
+    "sophistication": "high",
+    "references": [],
+    "iocs": [
+      {
+        "value": "4d45d7b60c10c66977f1a593aa36cea7",
+        "type": "file-hash-md5",
+        "description": "r.bat (Sandworm)",
+        "tags": [
+          "malware_file",
+          "script"
+        ]
+      },
+      {
+        "value": "cf85ceea940ae5f2cc0ee0a9fc23d5c8",
+        "type": "file-hash-md5",
+        "description": "jp.exe (JUICYPOTATONG, Sandworm)",
+        "tags": [
+          "malware_file",
+          "tool",
+          "privilege_escalation"
+        ]
+      },
+      {
+        "value": "a048daae363e6cbe9a191d7189733ea4",
+        "type": "file-hash-md5",
+        "description": "msd.exe (dump LSASS, Sandworm)",
+        "tags": [
+          "malware_file",
+          "tool",
+          "credential_dumping"
+        ]
+      },
+      {
+        "value": "5294aaf2ff80547172ebb9e0bcb52e0f",
+        "type": "file-hash-md5",
+        "description": "crdss.exe (QUEUESEED dropper, Sandworm)",
+        "tags": [
+          "malware_file",
+          "dropper",
+          "queueseed"
+        ]
+      },
+      {
+        "value": "58504fc65456f2d932173446e15b1799",
+        "type": "file-hash-md5",
+        "description": "lunose.wll (QUEUESEED, Sandworm)",
+        "tags": [
+          "malware_file",
+          "queueseed"
+        ]
+      },
+      {
+        "value": "e165c210a6d7366e2c78e5371d02e3345c25fb75393b7d7e9dc9a8fa737e74d4",
+        "type": "file-hash-sha256",
+        "description": "r.bat (Sandworm)",
+        "tags": [
+          "malware_file",
+          "script"
+        ]
+      },
+      {
+        "value": "ce85f5bcd52c79582a66bc7ef3f11f4ac74e9cc9962551b5912ac6bfa78ea841",
+        "type": "file-hash-sha256",
+        "description": "jp.exe (JUICYPOTATONG, Sandworm)",
+        "tags": [
+          "malware_file",
+          "tool",
+          "privilege_escalation"
+        ]
+      },
+      {
+        "value": "6ea79c94ed790093341b1a479eb31bdf7368e3c891501aa2ce18acc71b318c96",
+        "type": "file-hash-sha256",
+        "description": "msd.exe (dump LSASS, Sandworm)",
+        "tags": [
+          "malware_file",
+          "tool",
+          "credential_dumping"
+        ]
+      },
+      {
+        "value": "f30b9f6e913798ca52154c88725ee262a7bf92fe7caac1ae2e5147e457b9b08a",
+        "type": "file-hash-sha256",
+        "description": "crdss.exe (QUEUESEED dropper, Sandworm)",
+        "tags": [
+          "malware_file",
+          "dropper",
+          "queueseed"
+        ]
+      },
+      {
+        "value": "ccb9edfa233328c3351bd3a46fec037aeb27b3a74779c2bbb738e9e108c33e76",
+        "type": "file-hash-sha256",
+        "description": "rp.exe (ROTTENPOTATONG, Sandworm)",
+        "tags": [
+          "malware_file",
+          "tool",
+          "privilege_escalation"
+        ]
+      }
+    ]
+  },
+  {
+    "apt_id_placeholder": "UAC-0056",
+    "name": "UAC-0056",
+    "aliases": [],
+    "description": "Кіберзлочинне угруповання, що атакує державні організації України через фішинг з XLS макросами, часто доставляючи Cobalt Strike Beacon.",
+    "primary_motivation": "espionage",
+    "sophistication": "medium",
+    "references": [],
+    "iocs": [
+      {
+        "value": "c6e7af8d31a951b8c05565ab18c4f258",
+        "type": "file-hash-md5",
+        "description": "Інформація щодо наявності вакансій та їх укомплектування.xls (UAC-0056)",
+        "tags": [
+          "malware_file",
+          "xls",
+          "macro"
+        ]
+      },
+      {
+        "value": "28f18fc7d9a0ab530742c2314cbd5c32",
+        "type": "file-hash-md5",
+        "description": "write.exe (дропер, UAC-0056)",
+        "tags": [
+          "malware_file",
+          "dropper"
+        ]
+      },
+      {
+        "value": "8409920ef2d78549fc214718c4719d3a",
+        "type": "file-hash-md5",
+        "description": "TRYxaEbX (зашифрований пейлоад, UAC-0056)",
+        "tags": [
+          "malware_file",
+          "payload"
+        ]
+      },
+      {
+        "value": "1dc98fb372925fcba321b0bc8347fdcc",
+        "type": "file-hash-md5",
+        "description": "TRYxaEbX.ps1 (PowerShell-скрипт, UAC-0056)",
+        "tags": [
+          "malware_file",
+          "powershell"
+        ]
+      },
+      {
+        "value": "26e326ba69f5258c4979902b5bd4f24e",
+        "type": "file-hash-md5",
+        "description": "shellcode.x86 (Cobalt Strike Beacon, UAC-0056)",
+        "tags": [
+          "malware_file",
+          "cobalt_strike",
+          "beacon"
+        ]
+      },
+      {
+        "value": "024054ff04e0fd75a4765dd705067a6b336caa751f0a804fefce787382ac45c1",
+        "type": "file-hash-sha256",
+        "description": "Інформація щодо наявності вакансій та їх укомплектування.xls (UAC-0056)",
+        "tags": [
+          "malware_file",
+          "xls",
+          "macro"
+        ]
+      },
+      {
+        "value": "14736be09a7652d206cd6ab35375116ec4fad499bb1b47567e4fd56dcfcd22ea",
+        "type": "file-hash-sha256",
+        "description": "write.exe (дропер, UAC-0056)",
+        "tags": [
+          "malware_file",
+          "dropper"
+        ]
+      },
+      {
+        "value": "e68c83ce6359691ce63c957ebfdbf959c5b199c83fd2480aebe4220fec9f3304",
+        "type": "file-hash-sha256",
+        "description": "TRYxaEbX (зашифрований пейлоад, UAC-0056)",
+        "tags": [
+          "malware_file",
+          "payload"
+        ]
+      },
+      {
+        "value": "d1e6d365a3ede77bd7f6c77523b114dd9628f7b9bafb2e458f9b19bd6ce24c71",
+        "type": "file-hash-sha256",
+        "description": "TRYxaEbX.ps1 (PowerShell-скрипт, UAC-0056)",
+        "tags": [
+          "malware_file",
+          "powershell"
+        ]
+      },
+      {
+        "value": "9dec13e1b0ed9337fcbe233d5f83eff09c64a14c7f2400b9b915a685b29612ea",
+        "type": "file-hash-sha256",
+        "description": "shellcode.x86 (Cobalt Strike Beacon, UAC-0056)",
+        "tags": [
+          "malware_file",
+          "cobalt_strike",
+          "beacon"
+        ]
+      }
+    ]
+  },
+  {
+    "apt_id_placeholder": "UAC-0003_UAC-0024",
+    "name": "Turla",
+    "aliases": [
+      "Venomous Bear",
+      "Waterbug",
+      "UAC-0003",
+      "UAC-0024"
+    ],
+    "description": "Одне з найстаріших та найскладніших APT-угруповань, пов'язують з російськими спецслужбами. Здійснює атаки на Сили безпеки та оборони України.",
+    "primary_motivation": "espionage",
+    "sophistication": "high",
+    "references": [],
+    "iocs": [
+      {
+        "value": "KAZUAR_malware_signature",
+        "type": "malware-signature",
+        "description": "KAZUAR backdoor used by Turla",
+        "tags": [
+          "kazuar",
+          "backdoor"
+        ]
+      },
+      {
+        "value": "CAPIBAR_malware_signature",
+        "type": "malware-signature",
+        "description": "CAPIBAR malware used by Turla",
+        "tags": [
+          "capibar"
+        ]
+      }
+    ]
+  }
+]

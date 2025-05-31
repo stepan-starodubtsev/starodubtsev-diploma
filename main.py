@@ -6,6 +6,8 @@ from app.core.database import engine, Base  # Для створення табл
 from app.modules.device_interaction import api as device_interaction_api
 from app.modules.data_ingestion.service import DataIngestionService  # <--- Імпортуй твій сервіс
 
+from app.modules.ioc_management import api as ioc_management_api
+
 # ... інші імпорти ...
 
 # --- Створення екземпляра сервісу прийому даних ---
@@ -66,7 +68,7 @@ app = FastAPI(
 
 # Підключаємо роутер для модуля взаємодії з пристроями
 app.include_router(device_interaction_api.router)  # Префікс вже визначений в самому роутері
-
+app.include_router(ioc_management_api.router)
 
 @app.get("/")
 async def root():
