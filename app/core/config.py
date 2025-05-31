@@ -20,6 +20,8 @@ class Settings:
 
     DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://user:password@localhost/default_db")
 
+    ELASTICSEARCH_HOST: str = os.getenv("ELASTICSEARCH_HOST", "localhost")  # Для запуску Python поза Docker
+    ELASTICSEARCH_PORT_API: int = int(os.getenv("ELASTICSEARCH_PORT_API", "9200"))  # Для запуску Python поза Docker
 
 settings = Settings()
 
