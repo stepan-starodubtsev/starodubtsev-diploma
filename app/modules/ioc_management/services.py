@@ -67,7 +67,7 @@ class IoCManagementService:
 
     def delete_ioc_source(self, db: Session, source_id: int) -> bool:  # ...
         db_source = self.get_ioc_source_by_id(db, source_id)
-        if db_source: db.delete(db_source) db.commit() return True
+        if db_source: db.delete(db_source); db.commit(); return True
         return False
 
     # --- CRUD для APTGroup (без змін) ---
@@ -424,12 +424,12 @@ class IoCManagementService:
         # ... (Код з попереднього прикладу) ...
         apt_group = self.get_apt_group_by_id(db, apt_group_id)
         if not apt_group: raise ValueError(f"APT Group with ID {apt_group_id} not found.")
-        if not es_writer or not es_writer.es_client: print("ES client not available.") return None
+        if not es_writer or not es_writer.es_client: print("ES client not available."); return None
         es_client: Elasticsearch = es_writer.es_client
         try:
             search_query = {"query": {"ids": {"values": [ioc_es_id]}}}
             search_res = es_client.search(index="siem-iocs-*", body=search_query)
-            if not search_res['hits']['hits']: print(f"IoC ES_ID '{ioc_es_id}' not found.") return None
+            if not search_res['hits']['hits']: print(f"IoC ES_ID '{ioc_es_id}' not found."); return None
             hit = search_res['hits']['hits'][0]
             target_index = hit['_index']
             update_script = {"script": {
@@ -474,8 +474,8 @@ class IoCManagementService:
     def delete_apt_group(self, db: Session, es_writer: ElasticsearchWriter, apt_group_id: int) -> bool:
         # ... (Код з попереднього прикладу) ...
         db_apt_group = self.get_apt_group_by_id(db, apt_group_id)
-        if not db_apt_group: print(f"APT Group ID {apt_group_id} not found in PG.") return False
-        if not es_writer or not es_writer.es_client: print("ES client not available. Cannot update IoCs.") return False
+        if not db_apt_group: print(f"APT Group ID {apt_group_id} not found in PG."); return False
+        if not es_writer or not es_writer.es_client: print("ES client not available. Cannot update IoCs."); return False
         es_client: Elasticsearch = es_writer.es_client
         update_by_query_body = {"script": {
             "source": "if (ctx._source.attributed_apt_group_ids != null && ctx._source.attributed_apt_group_ids.contains(params.apt_id_to_remove)) { ArrayList new_ids = new ArrayList() for (int id : ctx._source.attributed_apt_group_ids) { if (id != params.apt_id_to_remove) { new_ids.add(id) } } ctx._source.attributed_apt_group_ids = new_ids ctx._source.updated_at_siem = params.now } else { ctx.op = 'noop' }",
@@ -499,7 +499,7 @@ class IoCManagementService:
     def get_iocs_for_apt_group(self, es_writer: ElasticsearchWriter, apt_group_id: int, skip: int = 0,
                                limit: int = 100) -> List[schemas.IoCResponse]:
         # ... (Код з попереднього прикладу) ...
-        if not es_writer or not es_writer.es_client: print("ES client not available.") return []
+        if not es_writer or not es_writer.es_client: print("ES client not available."); return []
         es_client: Elasticsearch = es_writer.es_client
         query_body = {"query": {"term": {"attributed_apt_group_ids": apt_group_id}}, "from": skip, "size": limit,
                       "sort": [{"updated_at_siem": {"order": "desc", "unmapped_type": "date"}},
