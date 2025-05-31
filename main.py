@@ -6,7 +6,9 @@ from app.core.database import engine, Base  # Для створення табл
 from app.modules.device_interaction import api as device_interaction_api
 from app.modules.data_ingestion.service import DataIngestionService  # <--- Імпортуй твій сервіс
 
-from app.modules.ioc_management import api as ioc_management_api
+from app.modules.ioc_sources import api as ioc_sources_api  # <--- НОВИЙ
+from app.modules.apt_groups import api as apt_groups_api  # <--- НОВИЙ
+from app.modules.indicators import api as indicators_api  # <--- НОВИЙ
 
 # ... інші імпорти ...
 
@@ -68,7 +70,11 @@ app = FastAPI(
 
 # Підключаємо роутер для модуля взаємодії з пристроями
 app.include_router(device_interaction_api.router)  # Префікс вже визначений в самому роутері
-app.include_router(ioc_management_api.router)
+app.include_router(device_interaction_api.router)
+app.include_router(ioc_sources_api.router)  # <--- ДОДАНО
+app.include_router(apt_groups_api.router)  # <--- ДОДАНО
+app.include_router(indicators_api.router)  # <--- ДОДАНО
+
 
 @app.get("/")
 async def root():

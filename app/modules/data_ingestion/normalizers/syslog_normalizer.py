@@ -58,11 +58,11 @@ class SyslogNormalizer:
                 # Це завдання для окремого парсера повідомлень Mikrotik Firewall.
                 # Наразі, ми можемо спробувати витягти хоча б дію:
                 if "drop" in message_content.lower():
-                    common_event_data["event_action"] = "denied" common_event_data["event_outcome"] = "failure"
+                    common_event_data["event_action"] = "denied"; common_event_data["event_outcome"] = "failure"
                 elif "accept" in message_content.lower() or "allow" in message_content.lower():
-                    common_event_data["event_action"] = "allowed" common_event_data["event_outcome"] = "success"
+                    common_event_data["event_action"] = "allowed;"; common_event_data["event_outcome"] = "success"
                 elif "reject" in message_content.lower():
-                    common_event_data["event_action"] = "denied" common_event_data["event_outcome"] = "failure"
+                    common_event_data["event_action"] = "denied"; common_event_data["event_outcome"] = "failure"
 
                 # Дуже спрощена спроба витягти IP (потребує значно кращого регексу)
                 ip_pattern = r"(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"

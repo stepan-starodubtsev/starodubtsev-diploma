@@ -2,9 +2,12 @@
 import socketserver
 import threading
 
+
 # Функція зворотного виклику (буде замінена методом з DataIngestionService)
 def default_netflow_handler(raw_packet_bytes: bytes, client_address: tuple):
-    print(f"NETFLOW/IPFIX packet received from {client_address[0]}:{client_address[1]}, size: {len(raw_packet_bytes)} bytes (via collector)")
+    print(
+        f"NETFLOW/IPFIX packet received from {client_address[0]}:{client_address[1]}, size: {len(raw_packet_bytes)} bytes (via collector)")
+
 
 class NetflowUDPHandler(socketserver.BaseRequestHandler):
     def __init__(self, request, client_address, server, message_handler_callback):
@@ -15,9 +18,10 @@ class NetflowUDPHandler(socketserver.BaseRequestHandler):
         data = self.request[0]
         self.message_handler_callback(data, self.client_address)
 
+
 class NetflowUDPCollector:
     def __init__(self, host: str = "0.0.0.0", port: int = 2055,
-                 message_handler_callback = default_netflow_handler):
+                 message_handler_callback=default_netflow_handler):
         self.host = host
         self.port = port
         self.server = None
@@ -45,9 +49,10 @@ class NetflowUDPCollector:
             print("Stopping NetFlow UDP Collector...")
             self.server.shutdown()
             self.server.server_close()
-            if self.thread and self.thread.is_alive(): # Перевірка, чи потік ще живий
+            if self.thread and self.thread.is_alive():  # Перевірка, чи потік ще живий
                 self.thread.join(timeout=5)
-            self.server = None self.thread = None
+            self.server = None
+            self.thread = None
             print("NetFlow UDP Collector stopped.")
         else:
             print("NetFlow UDP Collector is not running.")

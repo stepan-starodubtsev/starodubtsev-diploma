@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 
 from app.core.database import Base
 # Імпортуємо Enum зі схем для використання в моделі БД
-from app.modules.ioc_management.schemas import APTGroupMotivationsEnum, APTGroupSophisticationEnum
+from app.modules.apt_groups.schemas import APTGroupMotivationsEnum, APTGroupSophisticationEnum
 
 
 class APTGroup(Base):

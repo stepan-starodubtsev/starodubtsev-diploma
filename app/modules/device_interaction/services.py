@@ -40,14 +40,17 @@ class DeviceService:
         db.add(device_db)
         if commit:
             try:
-                db.commit() db.refresh(device_db)
+                db.commit();
+                db.refresh(device_db)
             except Exception as e:
-                db.rollback() print(f"Error committing status update for {device_db.name}: {e}")
+                db.rollback();
+                print(f"Error committing status update for {device_db.name}: {e}")
 
     # ... (get_device_status_and_update_db, configure_syslog_on_device, configure_netflow_on_device, get_firewall_rules_on_device - з виправленою логікою os_version)
     def get_device_status_and_update_db(self, db: Session, device_id: int) -> Optional[schemas.DeviceResponse]:
         device_db = db.query(Device).filter(Device.id == device_id).first()
-        if not device_db: print(f"Device with ID {device_id} not found for status update.") return None
+        if not device_db: print(f"Device with ID {device_id} not found for status update.")
+        return None
         initial_os_version = device_db.os_version
         os_version_from_device: Optional[str] = None
         final_status = DeviceStatusEnum.UNKNOWN
@@ -93,7 +96,10 @@ class DeviceService:
                                                      action_name_prefix=f"siemlog",
                                                      topics=syslog_config.topics)
                 if success:
-                    device_db.syslog_configured_by_siem = True final_status = DeviceStatusEnum.REACHABLE operation_successful = True print(
+                    device_db.syslog_configured_by_siem = True
+                    final_status = DeviceStatusEnum.REACHABLE
+                    operation_successful = True
+                    print(
                         f"Syslog configured successfully for {device_db.name}")
                 else:
                     print(f"Syslog configuration reported failure by connector for {device_db.name}")
@@ -127,7 +133,10 @@ class DeviceService:
                                                       interfaces=netflow_config.interfaces,
                                                       version=netflow_config.version)
                 if success:
-                    device_db.netflow_configured_by_siem = True final_status = DeviceStatusEnum.REACHABLE operation_successful = True print(
+                    device_db.netflow_configured_by_siem = True
+                    final_status = DeviceStatusEnum.REACHABLE
+                    operation_successful = True
+                    print(
                         f"Netflow configured successfully for {device_db.name}")
                 else:
                     print(f"Netflow configuration reported failure by connector for {device_db.name}")
@@ -298,5 +307,7 @@ class DeviceService:
 
     def delete_device(self, db: Session, device_id: int) -> bool:
         device_db = db.query(Device).filter(Device.id == device_id).first()
-        if device_db: db.delete(device_db) db.commit() return True
+        if device_db: db.delete(device_db)
+        db.commit()
+        return True
         return False

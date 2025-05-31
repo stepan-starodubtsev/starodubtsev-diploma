@@ -4,7 +4,7 @@ from sqlalchemy.sql import func
 from datetime import datetime, timezone  # Додано timezone
 
 from app.core.database import Base  # Імпортуємо Base з нашого db_setup
-from app.modules.ioc_management.schemas import IoCSourceTypeEnum  # Імпортуємо Enum зі схем
+from app.modules.ioc_sources.schemas import IoCSourceTypeEnum  # <--- НОВИЙ ПРАВИЛЬНИЙ ІМПОРТ
 
 
 class IoCSource(Base):
