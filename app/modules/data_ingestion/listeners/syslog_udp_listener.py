@@ -31,7 +31,7 @@ class SyslogUDPHandler(socketserver.BaseRequestHandler):
 
 
 class SyslogUDPListener:
-    def __init__(self, host: str = "0.0.0.0", port: int = 1514,
+    def __init__(self, host: str = "0.0.0.0", port: int = 514,
                  message_handler_callback=default_syslog_handler):
         self.host = host
         self.port = port
@@ -79,7 +79,7 @@ class SyslogUDPListener:
 # Простий тест для запуску слухача
 if __name__ == '__main__':
     listener = SyslogUDPListener(host="0.0.0.0",
-                                 port=1514)  # Використовуємо інший порт для тесту, щоб не потрібні були sudo права
+                                 port=514)  # Використовуємо інший порт для тесту, щоб не потрібні були sudo права
     try:
         listener.start()
         # Тримаємо основний потік живим, поки слухач працює

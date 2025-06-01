@@ -18,7 +18,7 @@ from app.core.config import settings
 
 class DataIngestionService:
     def __init__(self,
-                 syslog_host="0.0.0.0", syslog_port=1514,
+                 syslog_host="0.0.0.0", syslog_port=514,
                  netflow_host="0.0.0.0", netflow_port=2055
                  ):
         self.syslog_normalizer = SyslogNormalizer()
@@ -180,7 +180,7 @@ class DataIngestionService:
 
 
 if __name__ == '__main__':
-    SYSLOG_LISTEN_PORT = 1514
+    SYSLOG_LISTEN_PORT = 514
     NETFLOW_LISTEN_PORT = 2055
     service = DataIngestionService(syslog_port=SYSLOG_LISTEN_PORT, netflow_port=NETFLOW_LISTEN_PORT)
     try:
