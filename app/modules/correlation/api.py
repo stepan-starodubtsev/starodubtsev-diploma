@@ -10,6 +10,8 @@ from .services import CorrelationService
 from app.modules.data_ingestion.writers.elasticsearch_writer import ElasticsearchWriter
 from app.modules.indicators.services import IndicatorService
 from app.core.dependencies import get_es_writer  # Використовуємо спільну залежність
+from ..device_interaction.services import DeviceService
+from ..response.services import ResponseService
 
 router = APIRouter(
     prefix="/correlation",
@@ -118,20 +120,28 @@ def update_offence_status_api(  # Назва ендпоінту може бут�
 
 
 # --- Ендпоінт для запуску циклу кореляції (для тестування) ---
-@router.post("/run-cycle/", summary="Manually trigger a correlation cycle (for testing)")
+@router.post("/run-cycle/",
+             summary="Manually trigger a correlation cycle",
+             operation_id="correlation_trigger_run_cycle") # Змінено operation_id для унікальності
 def run_correlation_cycle_api(
-        db: Session = Depends(get_db),
-        es_writer: ElasticsearchWriter = Depends(get_es_writer),  # Використовуємо спільну залежність
-        indicator_service: IndicatorService = Depends(IndicatorService),
-        correlation_service: CorrelationService = Depends(CorrelationService)
+    db: Session = Depends(get_db),
+    es_writer: ElasticsearchWriter = Depends(get_es_writer),
+    indicator_service: IndicatorService = Depends(IndicatorService),
+    correlation_service: CorrelationService = Depends(CorrelationService),
+    device_service: DeviceService = Depends(DeviceService),     # <--- ІН'ЄКЦІЯ DeviceService
+    response_service: ResponseService = Depends(ResponseService) # <--- ІН'ЄКЦІЯ ResponseService
 ):
     try:
         correlation_service.run_correlation_cycle(
             db=db,
             es_writer=es_writer,
-            indicator_service=indicator_service
+            indicator_service=indicator_service,
+            device_service=device_service,     # <--- Передаємо device_service
+            response_service=response_service  # <--- Передаємо response_service
         )
-        return {"message": "Correlation cycle triggered successfully."}
+        return {"message": "Correlation cycle triggered successfully and ran."} # Змінено повідомлення
     except Exception as e:
         # TODO: Log error
+        # import traceback # Для детального логування під час розробки
+        # traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error during correlation cycle: {str(e)}")

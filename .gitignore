@@ -1,3 +1,7 @@
 .env
 .venv
 .idea
+
+./frontend/.idea
+./frontend/node_modules
+./frontend/.env

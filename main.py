@@ -2,6 +2,8 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager  # Для lifespan в нових версіях FastAPI/Starlette
 
+from starlette.middleware.cors import CORSMiddleware
+
 from app.core.database import engine, Base  # Для створення таблиць (якщо ще не через Alembic)
 from app.modules.device_interaction import api as device_interaction_api
 from app.modules.data_ingestion.service import DataIngestionService  # <--- Імпортуй твій сервіс
@@ -70,6 +72,18 @@ app = FastAPI(
     lifespan=lifespan  # <--- Підключення обробників життєвого циклу
 )
 
+origins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # Підключаємо роутер для модуля взаємодії з пристроями
 app.include_router(device_interaction_api.router)  # Префікс вже визначений в самому роутері
 app.include_router(device_interaction_api.router)
