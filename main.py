@@ -10,6 +10,7 @@ from app.modules.ioc_sources import api as ioc_sources_api  # <--- НОВИЙ
 from app.modules.apt_groups import api as apt_groups_api  # <--- НОВИЙ
 from app.modules.indicators import api as indicators_api  # <--- НОВИЙ
 from app.modules.correlation import api as correlation_api
+from app.modules.response import api as response_api # <--- ДОДАНО
 
 # ... інші імпорти ...
 
@@ -78,6 +79,7 @@ app.include_router(indicators_api.router)  # <--- ДОДАНО
 
 app.include_router(correlation_api.router)
 
+app.include_router(response_api.router) # <--- ДОДАНО
 
 @app.get("/")
 async def root():
