@@ -116,3 +116,39 @@ export const loadDefaultCorrelationRules = async () => {
         throw error.response?.data || error;
     }
 };
+
+export const getTopTriggeredIoCs = async (limit = 10, daysBack = 7) => {
+    try {
+        const response = await apiClient.get(`${CORRELATION_PREFIX}/dashboard/offences/top_triggered_iocs`, {
+            params: { limit, days_back: daysBack },
+        });
+        return response.data; // Очікуємо List[TopIoCTrigger]
+    } catch (error) {
+        console.error('Error fetching top triggered IoCs:', error.response?.data || error.message);
+        throw error.response?.data || error;
+    }
+};
+
+export const getOffencesByApt = async (daysBack = 7) => {
+    try {
+        const response = await apiClient.get(`${CORRELATION_PREFIX}/dashboard/offences/by_apt`, {
+            params: { days_back: daysBack },
+        });
+        return response.data; // Очікуємо List[AptOffenceSummary]
+    } catch (error) {
+        console.error('Error fetching offences by APT:', error.response?.data || error.message);
+        throw error.response?.data || error;
+    }
+};
+
+export const getOffencesSummaryBySeverity = async (daysBack = 7) => {
+    try {
+        const response = await apiClient.get(`${CORRELATION_PREFIX}/dashboard/offences/summary_by_severity`, {
+            params: { days_back: daysBack },
+        });
+        return response.data; // Очікуємо Dict[str, int] (наприклад, {"low": 5, "medium": 10})
+    } catch (error) {
+        console.error('Error fetching offences summary by severity:', error.response?.data || error.message);
+        throw error.response?.data || error;
+    }
+};

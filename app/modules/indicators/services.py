@@ -114,7 +114,8 @@ class IndicatorService:
                 try:
                     dt_val_str = source_data[dt_field_name].replace('Z', '+00:00')
                     if 'T' not in dt_val_str and len(dt_val_str) == 10:
-                        parsed_dt = datetime.strptime(dt_val_str, '%Y-%m-%d'); source_data[dt_field_name] = datetime(
+                        parsed_dt = datetime.strptime(dt_val_str, '%Y-%m-%d');
+                        source_data[dt_field_name] = datetime(
                             parsed_dt.year, parsed_dt.month, parsed_dt.day, tzinfo=timezone.utc)
                     else:
                         source_data[dt_field_name] = datetime.fromisoformat(dt_val_str)
@@ -134,7 +135,8 @@ class IndicatorService:
         try:
             return indicator_schemas.IoCResponse(**ioc_response_payload)
         except ValidationError as e:
-            print(f"Error validating IoC from ES: {e}. Data: {ioc_response_payload}"); return None
+            print(f"Error validating IoC from ES: {e}. Data: {ioc_response_payload}");
+            return None
 
     def add_ioc(self, db: Session, es_writer: ElasticsearchWriter, ioc_create_data: indicator_schemas.IoCCreate,
                 apt_service: 'APTGroupService') -> Optional[indicator_schemas.IoCResponse]:
@@ -208,7 +210,8 @@ class IndicatorService:
         except es_exceptions.NotFoundError:
             return None
         except es_exceptions.ElasticsearchWarning as e:
-            print(f"Error getting IoC by ES ID '{ioc_elasticsearch_id}': {e}"); return None
+            print(f"Error getting IoC by ES ID '{ioc_elasticsearch_id}': {e}");
+            return None
 
     def update_ioc(self, db: Session, es_writer: ElasticsearchWriter, ioc_elasticsearch_id: str,
                    ioc_update_data: indicator_schemas.IoCUpdate, apt_service: 'APTGroupService') -> Optional[
@@ -223,9 +226,11 @@ class IndicatorService:
             if res['hits']['hits']:
                 current_ioc_hit = res['hits']['hits'][0]
             else:
-                print(f"IoC ES_ID '{ioc_elasticsearch_id}' not found for update."); return None
+                print(f"IoC ES_ID '{ioc_elasticsearch_id}' not found for update.");
+                return None
         except es_exceptions.ElasticsearchWarning as e:
-            print(f"Error fetching current IoC for update: {e}"); return None
+            print(f"Error fetching current IoC for update: {e}");
+            return None
         target_index = current_ioc_hit['_index'];
         existing_doc_source = current_ioc_hit['_source']
 
@@ -263,12 +268,15 @@ class IndicatorService:
                 updated_hit = es_client.get(index=target_index, id=ioc_elasticsearch_id)
                 return self._parse_ioc_hit_to_response(updated_hit)
             else:
-                print(f"Failed to update IoC {ioc_elasticsearch_id}. Response: {resp}"); return None
+                print(f"Failed to update IoC {ioc_elasticsearch_id}. Response: {resp}");
+                return None
         except es_exceptions.NotFoundError:
             print(
-                f"IoC {ioc_elasticsearch_id} not found in index {target_index} for update (during index call)."); return None
+                f"IoC {ioc_elasticsearch_id} not found in index {target_index} for update (during index call).");
+            return None
         except Exception as e:
-            print(f"Error updating IoC {ioc_elasticsearch_id}: {e}"); return None
+            print(f"Error updating IoC {ioc_elasticsearch_id}: {e}");
+            return None
 
     def delete_ioc(self, es_writer: ElasticsearchWriter, ioc_elasticsearch_id: str) -> bool:
         # ... (код без змін) ...
@@ -282,15 +290,20 @@ class IndicatorService:
             target_index = res['hits']['hits'][0]['_index']
             resp = es_client.delete(index=target_index, id=ioc_elasticsearch_id)
             if resp.get('result') == 'deleted':
-                print(f"IoC {ioc_elasticsearch_id} deleted from {target_index}."); return True
+                print(f"IoC {ioc_elasticsearch_id} deleted from {target_index}.");
+                return True
             elif resp.get('result') == 'not_found':
-                print(f"IoC {ioc_elasticsearch_id} already not found in {target_index}."); return True
+                print(f"IoC {ioc_elasticsearch_id} already not found in {target_index}.");
+                return True
             else:
-                print(f"Failed to delete IoC {ioc_elasticsearch_id}. Response: {resp}"); return False
+                print(f"Failed to delete IoC {ioc_elasticsearch_id}. Response: {resp}");
+                return False
         except es_exceptions.NotFoundError:
-            print(f"IoC {ioc_elasticsearch_id} not found for deletion (NotFoundError)."); return True
+            print(f"IoC {ioc_elasticsearch_id} not found for deletion (NotFoundError).");
+            return True
         except es_exceptions.ElasticsearchWarning as e:
-            print(f"Error deleting IoC {ioc_elasticsearch_id}: {e}"); return False
+            print(f"Error deleting IoC {ioc_elasticsearch_id}: {e}");
+            return False
 
     def get_all_iocs(self, es_writer: ElasticsearchWriter, skip: int = 0, limit: int = 100) -> List[
         indicator_schemas.IoCResponse]:
@@ -308,9 +321,11 @@ class IndicatorService:
                 if ioc_resp: iocs_found.append(ioc_resp)
             return iocs_found
         except es_exceptions.NotFoundError:
-            print(f"Index pattern siem-iocs-* not found."); return []
+            print(f"Index pattern siem-iocs-* not found.");
+            return []
         except es_exceptions.ElasticsearchWarning as e:
-            print(f"Error getting all IoCs: {e}"); return []
+            print(f"Error getting all IoCs: {e}");
+            return []
 
     def get_iocs_created_today(self, es_writer: ElasticsearchWriter, skip: int = 0, limit: int = 100) -> List[
         indicator_schemas.IoCResponse]:
@@ -331,9 +346,11 @@ class IndicatorService:
                 if ioc_resp: iocs_found.append(ioc_resp)
             return iocs_found
         except es_exceptions.NotFoundError:
-            print(f"Index pattern siem-iocs-* not found for today's IoCs."); return []
+            print(f"Index pattern siem-iocs-* not found for today's IoCs.");
+            return []
         except es_exceptions.ElasticsearchWarning as e:
-            print(f"Error getting today's IoCs: {e}"); return []
+            print(f"Error getting today's IoCs: {e}");
+            return []
 
     def link_ioc_to_apt(self, db: Session, es_writer: ElasticsearchWriter, ioc_es_id: str, apt_group_id: int,
                         apt_service: 'APTGroupService') -> Optional[indicator_schemas.IoCResponse]:
@@ -356,9 +373,11 @@ class IndicatorService:
             updated_hit = es_client.get(index=target_index, id=ioc_es_id)
             return self._parse_ioc_hit_to_response(updated_hit)
         except es_exceptions.NotFoundError:
-            print(f"IoC ES_ID '{ioc_es_id}' not found (NotFoundError)."); return None
+            print(f"IoC ES_ID '{ioc_es_id}' not found (NotFoundError).");
+            return None
         except es_exceptions.ElasticsearchWarning as e:
-            print(f"ES error linking IoC {ioc_es_id} to APT {apt_group_id}: {e}"); return None
+            print(f"ES error linking IoC {ioc_es_id} to APT {apt_group_id}: {e}");
+            return None
 
     def remove_apt_id_from_all_iocs(self, es_writer: ElasticsearchWriter, apt_group_id_to_remove: int) -> bool:
         # ... (код без змін) ...
@@ -378,7 +397,8 @@ class IndicatorService:
                 f"WARNING: ES failures during update_by_query for APT ID {apt_group_id_to_remove}: {response['failures']}"); return False
             return True
         except es_exceptions.ElasticsearchWarning as e:
-            print(f"Error updating IoCs in ES to remove APT ID {apt_group_id_to_remove}: {e}"); return False
+            print(f"Error updating IoCs in ES to remove APT ID {apt_group_id_to_remove}: {e}");
+            return False
 
     def get_iocs_by_apt_group_id(self, es_writer: ElasticsearchWriter, apt_group_id: int, skip: int = 0,
                                  limit: int = 100) -> List[indicator_schemas.IoCResponse]:
@@ -395,4 +415,44 @@ class IndicatorService:
                 if ioc_resp: iocs_found.append(ioc_resp)
             return iocs_found
         except es_exceptions.ElasticsearchWarning as e:
-            print(f"Error getting IoCs for APT group {apt_group_id}: {e}"); return []
+            print(f"Error getting IoCs for APT group {apt_group_id}: {e}");
+            return []
+
+    def get_active_ioc_summary_by_type(self, es_writer: ElasticsearchWriter) -> Dict[str, int]:
+        """
+        Повертає загальну кількість активних IoC, згрупованих за типом.
+        """
+        if not es_writer or not es_writer.es_client:
+            print("Elasticsearch client not available in get_active_ioc_summary_by_type.")
+            return {}
+
+        es_client: Elasticsearch = es_writer.es_client
+
+        # Запит агрегації до Elasticsearch
+        aggregation_query_body = {
+            "query": {
+                "term": {
+                    "is_active": True  # Тільки активні IoC
+                }
+            },
+            "aggs": {
+                "iocs_by_type": {
+                    "terms": {"field": "type.keyword", "size": 20}  # Групуємо за типом, .keyword для точного збігу
+                }
+            },
+            "size": 0  # Нам не потрібні самі документи, тільки агрегація
+        }
+
+        summary: Dict[str, int] = {}
+        try:
+            response = es_client.search(index="siem-iocs-*", body=aggregation_query_body)
+            buckets = response.get('aggregations', {}).get('iocs_by_type', {}).get('buckets', [])
+            for bucket in buckets:
+                ioc_type = bucket.get('key')
+                count = bucket.get('doc_count')
+                if ioc_type:
+                    summary[ioc_type] = count
+        except es_exceptions.ElasticsearchException as e:
+            print(f"Error getting IoC summary by type from Elasticsearch: {e}")
+
+        return summary

@@ -47,6 +47,7 @@ const Header = () => {
         { label: 'Індикатори (IoC)', path: '/iocs' },
         { label: 'Правила Кореляції', path: '/correlation-rules' },
         { label: 'Офенси', path: '/offences' },
+        { label: 'Правила реагування', path: '/responses' },
         // { label: 'Профіль', path: '/profile' }, // Якщо є автентифікація
     ];
 

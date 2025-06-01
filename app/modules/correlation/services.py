@@ -1,4 +1,5 @@
 # app/modules/correlation/services.py
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone, timedelta
@@ -22,6 +23,7 @@ from pydantic import ValidationError
 # --- ДОДАНО: Імпорти для сервісів реагування та взаємодії з пристроями ---
 from app.modules.response.services import ResponseService
 from app.modules.device_interaction.services import DeviceService
+from ..apt_groups.services import APTGroupService
 
 
 class CorrelationService:
@@ -141,6 +143,102 @@ class CorrelationService:
                     skipped_count += 1
         print(f"Default IoC-match rule loading. Created: {created_count}, Skipped: {skipped_count}")
         return {"created": created_count, "skipped": skipped_count}
+
+    def get_offences_summary_by_severity(self, db: Session, days_back: int) -> Dict[str, int]:
+        """
+        Повертає кількість офенсів за вказаний період, згрупованих за серйозністю.
+        """
+        time_from = datetime.now(timezone.utc) - timedelta(days=days_back)
+
+        # Використовуємо SQLAlchemy агрегацію
+        # Offence.severity - це SAEnum(OffenceSeverityEnum)
+        query_result = db.query(
+            Offence.severity,
+            func.count(Offence.id)
+        ).filter(
+            Offence.detected_at >= time_from
+        ).group_by(
+            Offence.severity
+        ).all()
+
+        summary = {sev.value: 0 for sev in OffenceSeverityEnum}  # Ініціалізуємо всіма можливими серйозностями
+        for severity_enum, count in query_result:
+            if severity_enum:  # Перевірка, що severity_enum не None
+                summary[severity_enum.value] = count
+        return summary
+
+    def get_recent_offences(self, db: Session, limit: int = 10) -> List[Offence]:
+        """Повертає список останніх N офенсів."""
+        return db.query(Offence).order_by(Offence.detected_at.desc()).limit(limit).all()
+
+    def get_top_triggered_iocs_from_offences(self, db: Session, limit: int = 10, days_back: int = 7) -> List[
+        Dict[str, Any]]:
+        """
+        Повертає топ-N IoC, на які найчастіше спрацьовували правила, на основі даних з офенсів.
+        Повертає список словників: [{"ioc_value": "1.2.3.4", "ioc_type": "ipv4-addr", "trigger_count": 5}, ...]
+        """
+        time_from = datetime.now(timezone.utc) - timedelta(days=days_back)
+
+        # Це складний запит, оскільки matched_ioc_details - це JSONB.
+        # Ми можемо або витягнути всі офенси і агрегувати в Python, або написати складний SQL.
+        # Для MVP, агрегація в Python може бути простішою.
+
+        offences_in_period = db.query(Offence.matched_ioc_details).filter(
+            Offence.detected_at >= time_from,
+            Offence.matched_ioc_details.isnot(None)  # Переконуємося, що поле не NULL
+        ).all()
+
+        ioc_counts: Dict[tuple, int] = {}  # (value, type) -> count
+        for offence_details_tuple in offences_in_period:
+            ioc_detail = offence_details_tuple[0]  # matched_ioc_details - це перший елемент кортежу
+            if isinstance(ioc_detail, dict):  # Перевірка, чи це словник
+                ioc_value = ioc_detail.get("value")
+                ioc_type = ioc_detail.get("type")  # Це вже буде рядок, бо Pydantic схема так зберігає
+                if ioc_value and ioc_type:
+                    key = (str(ioc_value), str(ioc_type))
+                    ioc_counts[key] = ioc_counts.get(key, 0) + 1
+
+        # Сортуємо та беремо топ-N
+        sorted_iocs = sorted(ioc_counts.items(), key=lambda item: item[1], reverse=True)
+
+        top_iocs = [{"ioc_value": val_type[0], "ioc_type": val_type[1], "trigger_count": count}
+                    for (val_type, count) in sorted_iocs[:limit]]
+        return top_iocs
+
+    def get_offences_by_apt_from_iocs(self, db: Session, apt_service: APTGroupService, days_back: int = 7) -> List[
+        Dict[str, Any]]:
+        """
+        Повертає кількість офенсів, згрупованих за APT.
+        Використовує attributed_apt_group_ids з matched_ioc_details в офенсах.
+        """
+        time_from = datetime.now(timezone.utc) - timedelta(days=days_back)
+
+        offences_in_period = db.query(Offence.matched_ioc_details, Offence.attributed_apt_group_ids).filter(
+            Offence.detected_at >= time_from
+        ).all()  # Завантажуємо поле attributed_apt_group_ids з офенса
+
+        apt_offence_counts: Dict[int, Dict[str, Any]] = {}  # apt_id -> {"name": "APT Name", "count": X}
+
+        for offence_tuple in offences_in_period:
+            # attributed_apt_ids_in_offence - це список ID APT, напряму збережений в офенсі
+            attributed_apt_ids_in_offence = offence_tuple.attributed_apt_group_ids or []
+
+            # Якщо attributed_apt_group_ids не зберігається в офенсі, а тільки в matched_ioc_details:
+            # ioc_detail = offence_tuple.matched_ioc_details
+            # if isinstance(ioc_detail, dict):
+            #     apt_ids_from_ioc = ioc_detail.get("attributed_apt_group_ids", [])
+            #     if isinstance(apt_ids_from_ioc, list):
+            #         for apt_id in apt_ids_from_ioc:
+            #             # ... (логіка підрахунку)
+
+            for apt_id in attributed_apt_ids_in_offence:
+                if apt_id not in apt_offence_counts:
+                    apt_group_db = apt_service.get_apt_group_by_id(db, apt_id)
+                    apt_name = apt_group_db.name if apt_group_db else f"Unknown APT ID {apt_id}"
+                    apt_offence_counts[apt_id] = {"apt_id": apt_id, "apt_name": apt_name, "offence_count": 0}
+                apt_offence_counts[apt_id]["offence_count"] += 1
+
+        return list(apt_offence_counts.values())
 
     # --- Логіка Correlation Engine (оновлена з викликом ResponseService) ---
     def run_correlation_cycle(self,

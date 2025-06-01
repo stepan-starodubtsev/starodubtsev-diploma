@@ -1,15 +1,18 @@
 # app/modules/correlation/api.py
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Body
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from app.core.database import get_db
 from . import schemas
+from .schemas import OffenceResponse
 from .services import CorrelationService
 # Для запуску циклу кореляції може знадобитися доступ до інших сервісів
 from app.modules.data_ingestion.writers.elasticsearch_writer import ElasticsearchWriter
 from app.modules.indicators.services import IndicatorService
 from app.core.dependencies import get_es_writer  # Використовуємо спільну залежність
+from ..apt_groups.services import APTGroupService
 from ..device_interaction.services import DeviceService
 from ..response.services import ResponseService
 
@@ -122,26 +125,90 @@ def update_offence_status_api(  # Назва ендпоінту може бут�
 # --- Ендпоінт для запуску циклу кореляції (для тестування) ---
 @router.post("/run-cycle/",
              summary="Manually trigger a correlation cycle",
-             operation_id="correlation_trigger_run_cycle") # Змінено operation_id для унікальності
+             operation_id="correlation_trigger_run_cycle")  # Змінено operation_id для унікальності
 def run_correlation_cycle_api(
-    db: Session = Depends(get_db),
-    es_writer: ElasticsearchWriter = Depends(get_es_writer),
-    indicator_service: IndicatorService = Depends(IndicatorService),
-    correlation_service: CorrelationService = Depends(CorrelationService),
-    device_service: DeviceService = Depends(DeviceService),     # <--- ІН'ЄКЦІЯ DeviceService
-    response_service: ResponseService = Depends(ResponseService) # <--- ІН'ЄКЦІЯ ResponseService
+        db: Session = Depends(get_db),
+        es_writer: ElasticsearchWriter = Depends(get_es_writer),
+        indicator_service: IndicatorService = Depends(IndicatorService),
+        correlation_service: CorrelationService = Depends(CorrelationService),
+        device_service: DeviceService = Depends(DeviceService),  # <--- ІН'ЄКЦІЯ DeviceService
+        response_service: ResponseService = Depends(ResponseService)  # <--- ІН'ЄКЦІЯ ResponseService
 ):
     try:
         correlation_service.run_correlation_cycle(
             db=db,
             es_writer=es_writer,
             indicator_service=indicator_service,
-            device_service=device_service,     # <--- Передаємо device_service
+            device_service=device_service,  # <--- Передаємо device_service
             response_service=response_service  # <--- Передаємо response_service
         )
-        return {"message": "Correlation cycle triggered successfully and ran."} # Змінено повідомлення
+        return {"message": "Correlation cycle triggered successfully and ran."}  # Змінено повідомлення
     except Exception as e:
         # TODO: Log error
         # import traceback # Для детального логування під час розробки
         # traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error during correlation cycle: {str(e)}")
+
+
+@router.get("/dashboard/offences/summary_by_severity",
+            response_model=Dict[str, int],  # Повертаємо словник {"low": X, "medium": Y ...}
+            summary="Get offence counts grouped by severity for a given period",
+            operation_id="dashboard_get_offence_summary_severity")
+def get_offence_summary_by_severity_api(
+        days_back: int = Query(7, ge=1, le=365, description="Number of past days to include (e.g., 7 for last week)"),
+        db: Session = Depends(get_db),
+        service: CorrelationService = Depends(CorrelationService)
+):
+    # Сервіс повертає Dict[str, int], де ключ - це рядок Enum.value
+    raw_summary = service.get_offences_summary_by_severity(db=db, days_back=days_back)
+    return raw_summary
+
+
+@router.get("/dashboard/offences/recent",
+            response_model=List[OffenceResponse],  # Використовуємо існуючу схему
+            summary="Get a list of recent offences",
+            operation_id="dashboard_get_recent_offences")
+def get_recent_offences_api(
+        limit: int = Query(10, ge=1, le=50, description="Number of recent offences to return"),
+        db: Session = Depends(get_db),
+        service: CorrelationService = Depends(CorrelationService)
+):
+    return service.get_recent_offences(db=db, limit=limit)
+
+
+class TopIoCTrigger(BaseModel):
+    ioc_value: str
+    ioc_type: str  # Або indicator_schemas.IoCTypeEnum, але рядок простіше для JSON
+    trigger_count: int
+
+
+@router.get("/dashboard/offences/top_triggered_iocs",
+            response_model=List[TopIoCTrigger],
+            summary="Get top IoCs that triggered correlation rules",
+            operation_id="dashboard_get_top_triggered_iocs")
+def get_top_triggered_iocs_api(
+        limit: int = Query(10, ge=1, le=50),
+        days_back: int = Query(7, ge=1, le=365),
+        db: Session = Depends(get_db),
+        service: CorrelationService = Depends(CorrelationService)
+):
+    return service.get_top_triggered_iocs_from_offences(db=db, limit=limit, days_back=days_back)
+
+
+class AptOffenceSummary(BaseModel):
+    apt_id: int
+    apt_name: str
+    offence_count: int
+
+
+@router.get("/dashboard/offences/by_apt",
+            response_model=List[AptOffenceSummary],
+            summary="Get offence counts grouped by attributed APT",
+            operation_id="dashboard_get_offences_by_apt")
+def get_offences_by_apt_api(
+        days_back: int = Query(7, ge=1, le=365),
+        db: Session = Depends(get_db),
+        correlation_service: CorrelationService = Depends(CorrelationService),
+        apt_service: APTGroupService = Depends(APTGroupService)  # Потрібен для отримання імен APT
+):
+    return correlation_service.get_offences_by_apt_from_iocs(db=db, apt_service=apt_service, days_back=days_back)

@@ -180,3 +180,14 @@ class OffenceResponse(OffenceBase):
     class Config:
         from_attributes = True
         use_enum_values = True
+
+class OffenceSummaryResponse(BaseModel): # Pydantic схема для відповіді
+    # Ключі будуть значеннями OffenceSeverityEnum (low, medium, high, critical)
+    # Наприклад: {"low": 10, "medium": 5, "high": 2, "critical": 0}
+    # Або можна зробити більш структуровано:
+    # low: int = 0
+    # medium: int = 0
+    # high: int = 0
+    # critical: int = 0
+    # Для гнучкості, поки що Dict[str, int]
+    summary: Dict[OffenceSeverityEnum, int] # Використовуємо Enum як ключ для документації

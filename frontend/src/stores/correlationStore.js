@@ -1,5 +1,5 @@
 // src/stores/correlationStore.js
-import { makeObservable, observable, action, runInAction, computed } from 'mobx';
+import {makeObservable, observable, action, runInAction, computed} from 'mobx';
 import {
     getAllCorrelationRules,
     createCorrelationRule,
@@ -11,56 +11,62 @@ import {
     // Для офенсів, якщо керуємо ними тут
     getAllOffences,
     getOffenceById,
-    updateOffenceStatus
+    updateOffenceStatus, getOffencesSummaryBySeverity, getOffencesByApt, getTopTriggeredIoCs
 } from '../api/correlationApi';
 
 class CorrelationRuleStore {
     rules = [];
     currentRule = null;
-    isLoading = false;
-    error = null;
-    operationStatus = ''; // Для повідомлень про успіх/невдачу
-
-    pagination = { count: 0, page: 0, rowsPerPage: 10 };
-
-    // Стан для офенсів (якщо ця сторінка також їх відображає або керує)
     offences = [];
     currentOffence = null;
+    isLoading = false; // Загальний isLoading
+    isLoadingRules = false;
     isLoadingOffences = false;
+    error = null;
+    operationStatus = '';
+    pagination = { count: 0, page: 0, rowsPerPage: 10 };
     offencesPagination = { count: 0, page: 0, rowsPerPage: 10 };
+
+
+    // ---> Нові observables для даних дашборду <---
+    topTriggeredIoCs = [];
+    offencesByApt = [];
+    offencesSummary = {}; // { low: 0, medium: 0, high: 0, critical: 0 }
+
+    isLoadingTopIoCs = false;
+    isLoadingOffencesByApt = false;
+    isLoadingOffencesSummary = false;
+
+    // -------------------------------------------
 
 
     constructor() {
         makeObservable(this, {
-            rules: observable.struct,
-            currentRule: observable.deep,
-            isLoading: observable,
-            error: observable,
-            operationStatus: observable,
-            pagination: observable.deep,
-            offences: observable.struct,
-            currentOffence: observable.deep,
-            isLoadingOffences: observable,
-            offencesPagination: observable.deep,
+            rules: observable.struct, currentRule: observable.deep,
+            offences: observable.struct, currentOffence: observable.deep,
+            isLoading: observable, isLoadingRules: observable, isLoadingOffences: observable,
+            error: observable, operationStatus: observable,
+            pagination: observable.deep, offencesPagination: observable.deep,
 
-            fetchRules: action,
-            fetchRuleById: action,
-            addRule: action,
-            saveRule: action,
-            removeRule: action,
-            runCorrelationCycle: action,
-            runLoadDefaultRules: action,
-            clearCurrentRule: action,
-            setPagination: action,
+            // ---> Нові observables та actions для дашборду <---
+            topTriggeredIoCs: observable.struct,
+            offencesByApt: observable.struct,
+            offencesSummary: observable.deep,
+            isLoadingTopIoCs: observable,
+            isLoadingOffencesByApt: observable,
+            isLoadingOffencesSummary: observable,
 
-            fetchOffences: action,
-            fetchOffenceById: action,
-            updateOffence: action,
-            setOffencesPagination: action,
-            clearCurrentOffence: action,
+            fetchTopTriggeredIoCs: action,
+            fetchOffencesByApt: action,
+            fetchOffencesSummary: action,
+            // -------------------------------------------
 
-            totalRules: computed,
-            totalOffences: computed,
+            fetchRules: action, fetchRuleById: action, addRule: action, saveRule: action, removeRule: action,
+            runCorrelationCycle: action, runLoadDefaultRules: action, clearCurrentRule: action, setPagination: action,
+            fetchOffences: action, fetchOffenceById: action, updateOffence: action,
+            setOffencesPagination: action, clearCurrentOffence: action,
+
+            totalRules: computed, totalOffences: computed,
         });
     }
 
@@ -70,8 +76,14 @@ class CorrelationRuleStore {
         this.pagination.rowsPerPage = rowsPerPage;
         this.fetchRules();
     }
-    get totalRules() { return this.pagination.count; }
-    clearCurrentRule() { this.currentRule = null; }
+
+    get totalRules() {
+        return this.pagination.count;
+    }
+
+    clearCurrentRule() {
+        this.currentRule = null;
+    }
 
     // --- Pagination for Offences ---
     setOffencesPagination(page, rowsPerPage) {
@@ -79,13 +91,20 @@ class CorrelationRuleStore {
         this.offencesPagination.rowsPerPage = rowsPerPage;
         this.fetchOffences();
     }
-    get totalOffences() { return this.offencesPagination.count; }
-    clearCurrentOffence() { this.currentOffence = null; }
+
+    get totalOffences() {
+        return this.offencesPagination.count;
+    }
+
+    clearCurrentOffence() {
+        this.currentOffence = null;
+    }
 
 
     // --- Actions for Correlation Rules ---
     async fetchRules(onlyEnabled = true) {
-        this.isLoading = true; this.error = null;
+        this.isLoading = true;
+        this.error = null;
         try {
             const skip = this.pagination.page * this.pagination.rowsPerPage;
             const limit = this.pagination.rowsPerPage;
@@ -95,29 +114,60 @@ class CorrelationRuleStore {
                 // this.pagination.count = data.totalCount; // Якщо API повертає
                 this.isLoading = false;
             });
-        } catch (error) { runInAction(() => { this.error = error.message || "Failed to fetch rules"; this.isLoading = false; }); }
+        } catch (error) {
+            runInAction(() => {
+                this.error = error.message || "Failed to fetch rules";
+                this.isLoading = false;
+            });
+        }
     }
 
     async fetchRuleById(ruleId) {
-        this.isLoading = true; this.error = null; this.currentRule = null;
+        this.isLoading = true;
+        this.error = null;
+        this.currentRule = null;
         try {
             const data = await getCorrelationRuleById(ruleId);
-            runInAction(() => { this.currentRule = data; this.isLoading = false; });
+            runInAction(() => {
+                this.currentRule = data;
+                this.isLoading = false;
+            });
             return data;
-        } catch (error) { runInAction(() => { this.error = error.message || `Failed to fetch rule ${ruleId}`; this.isLoading = false; }); throw error;}
+        } catch (error) {
+            runInAction(() => {
+                this.error = error.message || `Failed to fetch rule ${ruleId}`;
+                this.isLoading = false;
+            });
+            throw error;
+        }
     }
 
     async addRule(ruleData) {
-        this.isLoading = true; this.error = null; this.operationStatus = '';
+        this.isLoading = true;
+        this.error = null;
+        this.operationStatus = '';
         try {
             const newRule = await createCorrelationRule(ruleData);
-            runInAction(() => { this.fetchRules(); this.operationStatus = `Правило "${newRule.name}" успішно створено.`; this.isLoading = false; });
+            runInAction(() => {
+                this.fetchRules();
+                this.operationStatus = `Правило "${newRule.name}" успішно створено.`;
+                this.isLoading = false;
+            });
             return newRule;
-        } catch (error) { runInAction(() => { this.error = error.detail || error.message || "Failed to create rule"; this.operationStatus = `Помилка створення правила: ${this.error}`; this.isLoading = false; }); throw error; }
+        } catch (error) {
+            runInAction(() => {
+                this.error = error.detail || error.message || "Failed to create rule";
+                this.operationStatus = `Помилка створення правила: ${this.error}`;
+                this.isLoading = false;
+            });
+            throw error;
+        }
     }
 
     async saveRule(ruleId, ruleUpdateData) {
-        this.isLoading = true; this.error = null; this.operationStatus = '';
+        this.isLoading = true;
+        this.error = null;
+        this.operationStatus = '';
         try {
             const updatedRule = await updateCorrelationRule(ruleId, ruleUpdateData);
             runInAction(() => {
@@ -127,11 +177,20 @@ class CorrelationRuleStore {
                 this.isLoading = false;
             });
             return updatedRule;
-        } catch (error) { runInAction(() => { this.error = error.detail || error.message || `Failed to update rule ${ruleId}`; this.operationStatus = `Помилка оновлення правила: ${this.error}`; this.isLoading = false; }); throw error;}
+        } catch (error) {
+            runInAction(() => {
+                this.error = error.detail || error.message || `Failed to update rule ${ruleId}`;
+                this.operationStatus = `Помилка оновлення правила: ${this.error}`;
+                this.isLoading = false;
+            });
+            throw error;
+        }
     }
 
     async removeRule(ruleId) {
-        this.isLoading = true; this.error = null; this.operationStatus = '';
+        this.isLoading = true;
+        this.error = null;
+        this.operationStatus = '';
         try {
             await deleteCorrelationRule(ruleId);
             runInAction(() => {
@@ -140,12 +199,20 @@ class CorrelationRuleStore {
                 this.operationStatus = `Правило ID ${ruleId} успішно видалено.`;
                 this.isLoading = false;
             });
-        } catch (error) { runInAction(() => { this.error = error.detail || error.message || `Failed to delete rule ${ruleId}`; this.operationStatus = `Помилка видалення правила: ${this.error}`; this.isLoading = false; }); throw error;}
+        } catch (error) {
+            runInAction(() => {
+                this.error = error.detail || error.message || `Failed to delete rule ${ruleId}`;
+                this.operationStatus = `Помилка видалення правила: ${this.error}`;
+                this.isLoading = false;
+            });
+            throw error;
+        }
     }
 
     async runCorrelationCycle() {
         this.isLoading = true; // Можна мати окремий isLoading для циклу
-        this.error = null; this.operationStatus = 'Запуск циклу кореляції...';
+        this.error = null;
+        this.operationStatus = 'Запуск циклу кореляції...';
         try {
             const result = await triggerCorrelationCycle();
             runInAction(() => {
@@ -165,7 +232,9 @@ class CorrelationRuleStore {
     }
 
     async runLoadDefaultRules() {
-        this.isLoading = true; this.error = null; this.operationStatus = 'Завантаження дефолтних правил...';
+        this.isLoading = true;
+        this.error = null;
+        this.operationStatus = 'Завантаження дефолтних правил...';
         try {
             const result = await loadDefaultCorrelationRules();
             runInAction(() => {
@@ -186,7 +255,8 @@ class CorrelationRuleStore {
 
     // --- Actions for Offences ---
     async fetchOffences() {
-        this.isLoadingOffences = true; this.error = null;
+        this.isLoadingOffences = true;
+        this.error = null;
         try {
             const skip = this.offencesPagination.page * this.offencesPagination.rowsPerPage;
             const limit = this.offencesPagination.rowsPerPage;
@@ -196,20 +266,38 @@ class CorrelationRuleStore {
                 // this.offencesPagination.count = data.totalCount; // Якщо API повертає
                 this.isLoadingOffences = false;
             });
-        } catch (error) { runInAction(() => { this.error = error.message || "Failed to fetch offences"; this.isLoadingOffences = false; }); }
+        } catch (error) {
+            runInAction(() => {
+                this.error = error.message || "Failed to fetch offences";
+                this.isLoadingOffences = false;
+            });
+        }
     }
 
     async fetchOffenceById(offenceId) {
-        this.isLoadingOffences = true; this.error = null; this.currentOffence = null;
+        this.isLoadingOffences = true;
+        this.error = null;
+        this.currentOffence = null;
         try {
             const data = await getOffenceById(offenceId);
-            runInAction(() => { this.currentOffence = data; this.isLoadingOffences = false; });
+            runInAction(() => {
+                this.currentOffence = data;
+                this.isLoadingOffences = false;
+            });
             return data;
-        } catch (error) { runInAction(() => { this.error = error.message || `Failed to fetch offence ${offenceId}`; this.isLoadingOffences = false; }); throw error; }
+        } catch (error) {
+            runInAction(() => {
+                this.error = error.message || `Failed to fetch offence ${offenceId}`;
+                this.isLoadingOffences = false;
+            });
+            throw error;
+        }
     }
 
     async updateOffence(offenceId, statusUpdateData) {
-        this.isLoadingOffences = true; this.error = null; this.operationStatus = '';
+        this.isLoadingOffences = true;
+        this.error = null;
+        this.operationStatus = '';
         try {
             const updatedOffence = await updateOffenceStatus(offenceId, statusUpdateData);
             runInAction(() => {
@@ -219,7 +307,66 @@ class CorrelationRuleStore {
                 this.isLoadingOffences = false;
             });
             return updatedOffence;
-        } catch (error) { runInAction(() => { this.error = error.detail || error.message || `Failed to update offence ${offenceId}`; this.operationStatus = `Помилка оновлення статусу офенса: ${this.error}`; this.isLoadingOffences = false; }); throw error; }
+        } catch (error) {
+            runInAction(() => {
+                this.error = error.detail || error.message || `Failed to update offence ${offenceId}`;
+                this.operationStatus = `Помилка оновлення статусу офенса: ${this.error}`;
+                this.isLoadingOffences = false;
+            });
+            throw error;
+        }
+    }
+
+    async fetchTopTriggeredIoCs(limit = 10, daysBack = 7) {
+        this.isLoadingTopIoCs = true;
+        this.error = null; // Можна мати окреме поле errorTopIoCs
+        try {
+            const data = await getTopTriggeredIoCs(limit, daysBack);
+            runInAction(() => {
+                this.topTriggeredIoCs = data;
+                this.isLoadingTopIoCs = false;
+            });
+        } catch (error) {
+            runInAction(() => {
+                this.error = error.message || "Failed to fetch top triggered IoCs";
+                // this.errorTopIoCs = ...
+                this.isLoadingTopIoCs = false;
+            });
+        }
+    }
+
+    async fetchOffencesByApt(daysBack = 7) {
+        this.isLoadingOffencesByApt = true;
+        this.error = null; // errorOffencesByApt
+        try {
+            const data = await getOffencesByApt(daysBack);
+            runInAction(() => {
+                this.offencesByApt = data;
+                this.isLoadingOffencesByApt = false;
+            });
+        } catch (error) {
+            runInAction(() => {
+                this.error = error.message || "Failed to fetch offences by APT";
+                this.isLoadingOffencesByApt = false;
+            });
+        }
+    }
+
+    async fetchOffencesSummary(daysBack = 7) {
+        this.isLoadingOffencesSummary = true;
+        this.error = null; // errorOffencesSummary
+        try {
+            const data = await getOffencesSummaryBySeverity(daysBack);
+            runInAction(() => {
+                this.offencesSummary = data;
+                this.isLoadingOffencesSummary = false;
+            });
+        } catch (error) {
+            runInAction(() => {
+                this.error = error.message || "Failed to fetch offences summary";
+                this.isLoadingOffencesSummary = false;
+            });
+        }
     }
 }
 

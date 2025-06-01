@@ -12,10 +12,11 @@ import IoCSourcesPage from "./pages/IoCSourcesPage.jsx";
 import APTGroupsPage from "./pages/APTGroupsPage.jsx";
 import IndicatorsPage from "./pages/IndicatorsPage.jsx";
 import CorrelationRulesPage from "./pages/CorrelationRulesPage.jsx";
-import OffencesPage from "./pages/OffencesPage.jsx"; // <--- НОВИЙ ХЕДЕР
+import OffencesPage from "./pages/OffencesPage.jsx";
+import ResponsePage from "./pages/ResponsePage.jsx";
+import DashboardPage from "./pages/DashboardPage.jsx"; // <--- НОВИЙ ХЕДЕР
 
 // Приклади сторінок (створи їх у src/pages/)
-const DashboardPage = () => <div>Дашборд</div>; // Заглушка
 // const ProfilePage = () => <div>Профіль Користувача</div>; // Заглушка
 
 
@@ -60,6 +61,7 @@ function App() {
                                 <Route path="/iocs" element={<IndicatorsPage />} />
                                 <Route path="/correlation-rules" element={<CorrelationRulesPage />} />
                                 <Route path="/offences" element={<OffencesPage />} />
+                                <Route path="/responses" element={<ResponsePage />} />
                                 {/* <Route path="/profile" element={<ProfilePage />} /> */}
 
                                 {/* Приклад редиректу, якщо шлях не знайдено */}

@@ -1,5 +1,5 @@
 # app/modules/indicators/api.py
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from elasticsearch import exceptions as es_exceptions
 from fastapi import APIRouter, Depends, HTTPException, Query, Path, Body
@@ -189,3 +189,19 @@ def link_ioc_to_apt_api(
         raise HTTPException(status_code=503, detail=f"ES error: {str(es_exc)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to link IoC to APT: {str(e)}")
+
+
+@router.get("/dashboard/summary_by_type",
+            response_model=Dict[str, int],  # Повертає {"ipv4-addr": X, "domain-name": Y, ...}
+            summary="Get active IoC counts grouped by type",
+            operation_id="dashboard_get_ioc_summary_type")
+def get_ioc_summary_by_type_api(
+        es_writer: ElasticsearchWriter = Depends(get_es_writer),  # Використовуємо спільну залежність
+        service: IndicatorService = Depends(IndicatorService)
+):
+    try:
+        return service.get_active_ioc_summary_by_type(es_writer=es_writer)
+    except es_exceptions.ElasticsearchWarning as es_exc:
+        raise HTTPException(status_code=503, detail=f"Elasticsearch error getting IoC summary: {str(es_exc)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get IoC summary: {str(e)}")
