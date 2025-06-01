@@ -48,8 +48,9 @@ const Header = () => {
         { label: 'Правила Кореляції', path: '/correlation-rules' },
         { label: 'Офенси', path: '/offences' },
         { label: 'Правила реагування', path: '/responses' },
-        // { label: 'Профіль', path: '/profile' }, // Якщо є автентифікація
+        { label: 'Профіль', path: '/profile' }, // Якщо є автентифікація
     ];
+
 
     return (
         <AppBar position="static" elevation={1} sx={{ marginBottom: theme.spacing(2) }}>

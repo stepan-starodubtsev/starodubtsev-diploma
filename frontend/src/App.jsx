@@ -1,9 +1,9 @@
 // src/App.js
-import React, { useState, useMemo, createContext } from 'react';
+import React, {useState, useMemo, createContext} from 'react';
 import {Box, CssBaseline, ThemeProvider} from '@mui/material';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'; // Додано Navigate
+import {BrowserRouter, Routes, Route, Navigate} from 'react-router-dom'; // Додано Navigate
 
-import { getAppTheme } from './theme'; // Наш файл з темою
+import {getAppTheme} from './theme'; // Наш файл з темою
 
 // Компоненти макету
 import Header from './components/layout/Header';
@@ -14,13 +14,18 @@ import IndicatorsPage from "./pages/IndicatorsPage.jsx";
 import CorrelationRulesPage from "./pages/CorrelationRulesPage.jsx";
 import OffencesPage from "./pages/OffencesPage.jsx";
 import ResponsePage from "./pages/ResponsePage.jsx";
-import DashboardPage from "./pages/DashboardPage.jsx"; // <--- НОВИЙ ХЕДЕР
+import DashboardPage from "./pages/DashboardPage.jsx";
+import ProfilePage from "./pages/ProfilePage.jsx";
+import LoginPage from "./pages/LoginPage.jsx"; // <--- НОВИЙ ХЕДЕР
 
 // Приклади сторінок (створи їх у src/pages/)
 // const ProfilePage = () => <div>Профіль Користувача</div>; // Заглушка
 
 
-export const ColorModeContext = createContext({ toggleColorMode: () => {} });
+export const ColorModeContext = createContext({
+    toggleColorMode: () => {
+    }
+});
 
 function App() {
     const [mode, setMode] = useState('dark'); // <--- Змінено на 'light' за замовчуванням
@@ -39,10 +44,10 @@ function App() {
     return (
         <ColorModeContext.Provider value={colorMode}>
             <ThemeProvider theme={theme}>
-                <CssBaseline />
+                <CssBaseline/>
                 <BrowserRouter>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}> {/* Змінено на column */}
-                        <Header /> {/* <--- Додано Хедер */}
+                    <Box sx={{display: 'flex', flexDirection: 'column', height: '100vh'}}> {/* Змінено на column */}
+                        <Header/> {/* <--- Додано Хедер */}
 
                         <Box
                             component="main"
@@ -54,18 +59,19 @@ function App() {
                             }}
                         >
                             <Routes>
-                                <Route path="/" element={<DashboardPage />} />
-                                <Route path="/devices" element={<DevicesPage />} />
-                                <Route path="/ioc-sources" element={<IoCSourcesPage />} />
-                                <Route path="/apt-groups" element={<APTGroupsPage />} />
-                                <Route path="/iocs" element={<IndicatorsPage />} />
-                                <Route path="/correlation-rules" element={<CorrelationRulesPage />} />
-                                <Route path="/offences" element={<OffencesPage />} />
-                                <Route path="/responses" element={<ResponsePage />} />
-                                {/* <Route path="/profile" element={<ProfilePage />} /> */}
+                                <Route path="/" element={<DashboardPage/>}/>
+                                <Route path="/devices" element={<DevicesPage/>}/>
+                                <Route path="/ioc-sources" element={<IoCSourcesPage/>}/>
+                                <Route path="/apt-groups" element={<APTGroupsPage/>}/>
+                                <Route path="/iocs" element={<IndicatorsPage/>}/>
+                                <Route path="/correlation-rules" element={<CorrelationRulesPage/>}/>
+                                <Route path="/offences" element={<OffencesPage/>}/>
+                                <Route path="/responses" element={<ResponsePage/>}/>
+                                <Route path="/profile" element={<ProfilePage/>}/>
+                                <Route path="/login" element={<LoginPage/>}/>
 
                                 {/* Приклад редиректу, якщо шлях не знайдено */}
-                                <Route path="*" element={<Navigate to="/" replace />} />
+                                <Route path="*" element={<Navigate to="/" replace/>}/>
                             </Routes>
                         </Box>
                     </Box>
