@@ -12,12 +12,12 @@ export const IoCSourceTypeEnum = {
 
 // Масив для використання в Select компонентах MUI (приклад для Джерел IoC)
 export const IoCSourceTypeLabels = [
-    { value: IoCSourceTypeEnum.MISP, label: "MISP" },
-    { value: IoCSourceTypeEnum.OPENCTI, label: "OpenCTI" },
-    { value: IoCSourceTypeEnum.STIX_FEED, label: "STIX Feed" },
-    { value: IoCSourceTypeEnum.CSV_URL, label: "CSV via URL" },
-    { value: IoCSourceTypeEnum.INTERNAL, label: "Внутрішнє джерело" },
-    { value: IoCSourceTypeEnum.MOCK_APT_REPORT, label: "Імітація (Звіт APT)" }
+    {value: IoCSourceTypeEnum.MISP, label: "MISP"},
+    {value: IoCSourceTypeEnum.OPENCTI, label: "OpenCTI"},
+    {value: IoCSourceTypeEnum.STIX_FEED, label: "STIX Feed"},
+    {value: IoCSourceTypeEnum.CSV_URL, label: "CSV via URL"},
+    {value: IoCSourceTypeEnum.INTERNAL, label: "Внутрішнє джерело"},
+    {value: IoCSourceTypeEnum.MOCK_APT_REPORT, label: "Імітація (Звіт APT)"}
 ];
 
 
@@ -35,14 +35,14 @@ export const IoCTypeEnum = {
 };
 
 export const IoCTypeLabels = [
-    { value: IoCTypeEnum.IPV4_ADDR, label: "IPv4 Адреса" },
-    { value: IoCTypeEnum.IPV6_ADDR, label: "IPv6 Адреса" },
-    { value: IoCTypeEnum.DOMAIN_NAME, label: "Доменне Ім'я" },
-    { value: IoCTypeEnum.URL, label: "URL" },
-    { value: IoCTypeEnum.MD5_HASH, label: "MD5 Хеш" },
-    { value: IoCTypeEnum.SHA1_HASH, label: "SHA1 Хеш" },
-    { value: IoCTypeEnum.SHA256_HASH, label: "SHA256 Хеш" },
-    { value: IoCTypeEnum.EMAIL_ADDR, label: "Email Адреса" }
+    {value: IoCTypeEnum.IPV4_ADDR, label: "IPv4 Адреса"},
+    {value: IoCTypeEnum.IPV6_ADDR, label: "IPv6 Адреса"},
+    {value: IoCTypeEnum.DOMAIN_NAME, label: "Доменне Ім'я"},
+    {value: IoCTypeEnum.URL, label: "URL"},
+    {value: IoCTypeEnum.MD5_HASH, label: "MD5 Хеш"},
+    {value: IoCTypeEnum.SHA1_HASH, label: "SHA1 Хеш"},
+    {value: IoCTypeEnum.SHA256_HASH, label: "SHA256 Хеш"},
+    {value: IoCTypeEnum.EMAIL_ADDR, label: "Email Адреса"}
 ];
 
 
@@ -56,11 +56,11 @@ export const APTGroupMotivationsEnum = {
 };
 
 export const APTGroupMotivationLabels = [
-    { value: APTGroupMotivationsEnum.ESPIONAGE, label: "Шпигунство" },
-    { value: APTGroupMotivationsEnum.FINANCIAL_GAIN, label: "Фінансова вигода" },
-    { value: APTGroupMotivationsEnum.SABOTAGE, label: "Саботаж/Руйнування" },
-    { value: APTGroupMotivationsEnum.HACKTIVISM, label: "Активізм" },
-    { value: APTGroupMotivationsEnum.UNKNOWN, label: "Невідома" }
+    {value: APTGroupMotivationsEnum.ESPIONAGE, label: "Шпигунство"},
+    {value: APTGroupMotivationsEnum.FINANCIAL_GAIN, label: "Фінансова вигода"},
+    {value: APTGroupMotivationsEnum.SABOTAGE, label: "Саботаж/Руйнування"},
+    {value: APTGroupMotivationsEnum.HACKTIVISM, label: "Активізм"},
+    {value: APTGroupMotivationsEnum.UNKNOWN, label: "Невідома"}
 ];
 
 export const APTGroupSophisticationEnum = {
@@ -71,10 +71,10 @@ export const APTGroupSophisticationEnum = {
 };
 
 export const APTGroupSophisticationLabels = [
-    { value: APTGroupSophisticationEnum.HIGH, label: "Високий" },
-    { value: APTGroupSophisticationEnum.MEDIUM, label: "Середній" },
-    { value: APTGroupSophisticationEnum.LOW, label: "Низький" },
-    { value: APTGroupSophisticationEnum.UNKNOWN, label: "Невідомий" }
+    {value: APTGroupSophisticationEnum.HIGH, label: "Високий"},
+    {value: APTGroupSophisticationEnum.MEDIUM, label: "Середній"},
+    {value: APTGroupSophisticationEnum.LOW, label: "Низький"},
+    {value: APTGroupSophisticationEnum.UNKNOWN, label: "Невідомий"}
 ];
 
 
@@ -87,9 +87,9 @@ export const CorrelationRuleTypeEnum = {
 };
 
 export const CorrelationRuleTypeLabels = [
-    { value: CorrelationRuleTypeEnum.IOC_MATCH_IP, label: "Зіставлення IP з IoC" },
-    { value: CorrelationRuleTypeEnum.THRESHOLD_LOGIN_FAILURES, label: "Поріг: Невдалі спроби входу" },
-    { value: CorrelationRuleTypeEnum.THRESHOLD_DATA_EXFILTRATION, label: "Поріг: Ексфільтрація даних" }
+    {value: CorrelationRuleTypeEnum.IOC_MATCH_IP, label: "Зіставлення IP з IoC"},
+    {value: CorrelationRuleTypeEnum.THRESHOLD_LOGIN_FAILURES, label: "Поріг: Невдалі спроби входу"},
+    {value: CorrelationRuleTypeEnum.THRESHOLD_DATA_EXFILTRATION, label: "Поріг: Ексфільтрація даних"}
 ];
 
 export const EventFieldToMatchTypeEnum = { // Використовується в правилах кореляції
@@ -103,12 +103,12 @@ export const EventFieldToMatchTypeEnum = { // Використовується �
 };
 
 export const EventFieldToMatchLabels = [
-    { value: EventFieldToMatchTypeEnum.SOURCE_IP, label: "IP Джерела (події)" },
-    { value: EventFieldToMatchTypeEnum.DESTINATION_IP, label: "IP Призначення (події)" },
-    { value: EventFieldToMatchTypeEnum.USERNAME, label: "Ім'я користувача (події)" },
-    { value: EventFieldToMatchTypeEnum.HOSTNAME, label: "Ім'я хоста (події)" },
-    { value: EventFieldToMatchTypeEnum.EVENT_MESSAGE, label: "Повідомлення (події)" },
-    { value: EventFieldToMatchTypeEnum.NETWORK_BYTES_TOTAL, label: "Загальна к-ть байт (події)" }
+    {value: EventFieldToMatchTypeEnum.SOURCE_IP, label: "IP Джерела (події)"},
+    {value: EventFieldToMatchTypeEnum.DESTINATION_IP, label: "IP Призначення (події)"},
+    {value: EventFieldToMatchTypeEnum.USERNAME, label: "Ім'я користувача (події)"},
+    {value: EventFieldToMatchTypeEnum.HOSTNAME, label: "Ім'я хоста (події)"},
+    {value: EventFieldToMatchTypeEnum.EVENT_MESSAGE, label: "Повідомлення (події)"},
+    {value: EventFieldToMatchTypeEnum.NETWORK_BYTES_TOTAL, label: "Загальна к-ть байт (події)"}
 ];
 
 // IoCTypeToMatchEnum в правилах кореляції - це той самий, що й IoCTypeEnum для індикаторів.
@@ -123,10 +123,10 @@ export const OffenceSeverityEnum = {
 };
 
 export const OffenceSeverityLabels = [
-    { value: OffenceSeverityEnum.LOW, label: "Низька" },
-    { value: OffenceSeverityEnum.MEDIUM, label: "Середня" },
-    { value: OffenceSeverityEnum.HIGH, label: "Висока" },
-    { value: OffenceSeverityEnum.CRITICAL, label: "Критична" }
+    {value: OffenceSeverityEnum.LOW, label: "Низька"},
+    {value: OffenceSeverityEnum.MEDIUM, label: "Середня"},
+    {value: OffenceSeverityEnum.HIGH, label: "Висока"},
+    {value: OffenceSeverityEnum.CRITICAL, label: "Критична"}
 ];
 
 export const OffenceStatusEnum = {
@@ -138,11 +138,11 @@ export const OffenceStatusEnum = {
 };
 
 export const OffenceStatusLabels = [
-    { value: OffenceStatusEnum.NEW, label: "Новий" },
-    { value: OffenceStatusEnum.IN_PROGRESS, label: "В обробці" },
-    { value: OffenceStatusEnum.CLOSED_FALSE_POSITIVE, label: "Закритий (Хибне спрац.)" },
-    { value: OffenceStatusEnum.CLOSED_TRUE_POSITIVE, label: "Закритий (Підтверджено)" },
-    { value: OffenceStatusEnum.CLOSED_OTHER, label: "Закритий (Інше)" }
+    {value: OffenceStatusEnum.NEW, label: "Новий"},
+    {value: OffenceStatusEnum.IN_PROGRESS, label: "В обробці"},
+    {value: OffenceStatusEnum.CLOSED_FALSE_POSITIVE, label: "Закритий (Хибне спрац.)"},
+    {value: OffenceStatusEnum.CLOSED_TRUE_POSITIVE, label: "Закритий (Підтверджено)"},
+    {value: OffenceStatusEnum.CLOSED_OTHER, label: "Закритий (Інше)"}
 ];
 
 
@@ -156,13 +156,17 @@ export const ResponseActionTypeEnum = {
 };
 
 export const ResponseActionTypeLabels = [
-    { value: ResponseActionTypeEnum.BLOCK_IP, label: "Блокувати IP" },
-    { value: ResponseActionTypeEnum.UNBLOCK_IP, label: "Розблокувати IP" },
-    { value: ResponseActionTypeEnum.SEND_EMAIL, label: "Надіслати Email" },
-    { value: ResponseActionTypeEnum.CREATE_TICKET, label: "Створити Тікет" },
-    { value: ResponseActionTypeEnum.ISOLATE_HOST, label: "Ізолювати Хост" }
+    {value: ResponseActionTypeEnum.BLOCK_IP, label: "Блокувати IP"},
+    {value: ResponseActionTypeEnum.UNBLOCK_IP, label: "Розблокувати IP"},
+    {value: ResponseActionTypeEnum.SEND_EMAIL, label: "Надіслати Email"},
+    {value: ResponseActionTypeEnum.CREATE_TICKET, label: "Створити Тікет"},
+    {value: ResponseActionTypeEnum.ISOLATE_HOST, label: "Ізолювати Хост"}
 ];
 
+export const IoCTypeToMatchEnum = {
+    IPV4_ADDR: "ipv4-addr",
+    IPV6_ADDR: "ipv6-addr"
+}
 // --- Інші константи ---
 // Наприклад, для пагінації, якщо ти хочеш мати їх централізовано
 export const DEFAULT_ROWS_PER_PAGE_OPTIONS = [5, 10, 25, 50, 100];
