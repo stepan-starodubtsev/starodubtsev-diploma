@@ -1,26 +1,22 @@
+# app/scripts/seed_data.py
 import os
 import sys
 from typing import List, Dict, Any
-
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 import json
 
-# --- Налаштування шляхів для коректних імпортів ---
-# Припускаємо, що цей скрипт знаходиться в app/scripts/
-# Корінь проєкту - це каталог, що містить папку app/
+# --- Налаштування шляхів ---
 CURRENT_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT_DIR = os.path.abspath(os.path.join(CURRENT_SCRIPT_DIR, '..', '..'))
 if PROJECT_ROOT_DIR not in sys.path:
     sys.path.insert(0, PROJECT_ROOT_DIR)
     print(f"Added project root to sys.path: {PROJECT_ROOT_DIR}")
 
-# --- Імпорти з твого проєкту ---
+# --- Імпорти з проєкту ---
 from app.core.database import SessionLocal, engine, Base
-# Імпортуємо всі моделі, щоб Base.metadata.create_all знав про них,
-# якщо ти використовуєш цей метод для створення таблиць тут.
-from app.database.postgres_models import device_models, ioc_source_models, threat_actor_models
-
+from app.database.postgres_models import device_models, ioc_source_models, threat_actor_models, correlation_models
+from app.database.postgres_models.correlation_models import CorrelationRule
 from app.modules.ioc_sources import schemas as ioc_source_schemas
 from app.modules.ioc_sources.services import IoCSourceService
 
@@ -30,16 +26,24 @@ from app.modules.apt_groups.services import APTGroupService
 from app.modules.indicators import schemas as indicator_schemas
 from app.modules.indicators.services import IndicatorService
 
+from app.modules.correlation.services import CorrelationService
+from app.modules.correlation.schemas import (  # Імпортуємо потрібні Enum та схеми
+    CorrelationRuleCreate,
+    CorrelationRuleTypeEnum,
+    EventFieldToMatchTypeEnum,
+    IoCTypeToMatchEnum,  # Потрібен для правил IOC_MATCH_IP
+    OffenceSeverityEnum
+)
+
 from app.modules.data_ingestion.writers.elasticsearch_writer import ElasticsearchWriter
-from app.core.config import settings  # Для налаштувань ES
+from app.core.config import settings
 from pydantic import ValidationError
 
-# Шлях до JSON файлу з даними (відносно кореня проєкту)
 MOCK_DATA_FILE_PATH = os.path.join(PROJECT_ROOT_DIR, "data", "apt_iocs_data.json")
 
 
 def load_mock_data_from_file() -> List[Dict[str, Any]]:
-    """Завантажує дані APT та IoC з JSON файлу."""
+    # ... (код без змін) ...
     try:
         if not os.path.exists(MOCK_DATA_FILE_PATH):
             print(f"ERROR: Mock data file not found at {MOCK_DATA_FILE_PATH}")
@@ -48,34 +52,26 @@ def load_mock_data_from_file() -> List[Dict[str, Any]]:
             data = json.load(f)
         return data
     except FileNotFoundError:
-        print(f"ERROR: Mock data file not found at {MOCK_DATA_FILE_PATH}")
-        return []
+        print(f"ERROR: Mock data file not found at {MOCK_DATA_FILE_PATH}"); return []
     except json.JSONDecodeError as e:
-        print(f"ERROR: Could not decode JSON from {MOCK_DATA_FILE_PATH}: {e}")
-        return []
+        print(f"ERROR: Could not decode JSON from {MOCK_DATA_FILE_PATH}: {e}"); return []
     except Exception as e:
-        print(f"ERROR: An unexpected error occurred while loading mock data: {e}")
-        return []
+        print(f"ERROR: An unexpected error occurred while loading mock data: {e}"); return []
 
 
 def seed_apt_groups(db: Session, apt_service: APTGroupService, apt_data_list: List[Dict[str, Any]]) -> Dict[str, int]:
-    """Створює або знаходить існуючі APT-угруповання в БД. Повертає мапінг placeholder_id -> db_id."""
+    # ... (код без змін) ...
     apt_id_map: Dict[str, int] = {}
     print("\n--- Seeding APT Groups ---")
     for apt_entry in apt_data_list:
         name = apt_entry.get("name")
-        if not name:
-            print(f"Skipping APT entry due to missing name: {apt_entry}")
-            continue
-
-        db_apt = apt_service.get_apt_group_by_name(db, name)  # Використовуємо метод сервісу
+        if not name: print(f"Skipping APT entry due to missing name: {apt_entry}"); continue
+        db_apt = apt_service.get_apt_group_by_name(db, name)
         if not db_apt:
             try:
                 references_pydantic = [apt_schemas.HttpUrl(str(url)) for url in apt_entry.get("references", []) if url]
                 apt_create_schema = apt_schemas.APTGroupCreate(
-                    name=name,
-                    aliases=apt_entry.get("aliases", []),
-                    description=apt_entry.get("description"),
+                    name=name, aliases=apt_entry.get("aliases", []), description=apt_entry.get("description"),
                     sophistication=apt_schemas.APTGroupSophisticationEnum(
                         apt_entry.get("sophistication", "unknown").lower()) if apt_entry.get(
                         "sophistication") else apt_schemas.APTGroupSophisticationEnum.UNKNOWN,
@@ -88,96 +84,150 @@ def seed_apt_groups(db: Session, apt_service: APTGroupService, apt_data_list: Li
                         "first_observed") else None,
                     last_observed=datetime.fromisoformat(apt_entry["last_observed"]) if apt_entry.get(
                         "last_observed") else None,
-                    references=references_pydantic
-                )
+                    references=references_pydantic)
                 db_apt = apt_service.create_apt_group(db, apt_create_schema)
                 print(f"Created APT Group: '{db_apt.name}' with ID {db_apt.id}")
             except (ValidationError, ValueError) as e:
                 print(f"Error creating/validating APT '{name}': {e}")
-                db_apt = apt_service.get_apt_group_by_name(db,
-                                                           name)  # Спробуємо отримати, якщо була помилка "вже існує"
+                db_apt = apt_service.get_apt_group_by_name(db, name)
                 if not db_apt: continue
-
-        if db_apt:
-            apt_id_map[apt_entry.get("apt_id_placeholder", name)] = db_apt.id
+        if db_apt: apt_id_map[apt_entry.get("apt_id_placeholder", name)] = db_apt.id
     return apt_id_map
 
 
 def seed_iocs_for_apts(
         db: Session,
         indicator_service: IndicatorService,
+        apt_service: APTGroupService,
         es_writer: ElasticsearchWriter,
         apt_data_list: List[Dict[str, Any]],
         apt_id_map: Dict[str, int],
         source_name_for_iocs: str
 ):
-    """Генерує та зберігає IoC з JSON, прив'язуючи їх до APT."""
+    # ... (код без змін) ...
     print(f"\n--- Seeding IoCs for source '{source_name_for_iocs}' ---")
-    iocs_created_count = 0
+    iocs_created_count = 0;
     iocs_failed_count = 0
     current_time = datetime.now(timezone.utc)
-
     for apt_entry in apt_data_list:
         apt_name_from_file = apt_entry.get("name")
         apt_placeholder = apt_entry.get("apt_id_placeholder", apt_name_from_file)
-        apt_db_id = apt_id_map.get(apt_placeholder)  # Реальний ID APT з БД
-
+        apt_db_id = apt_id_map.get(apt_placeholder)
         for ioc_json in apt_entry.get("iocs", []):
             try:
                 ioc_type_str = ioc_json.get("type", "").lower().replace("_", "-")
                 ioc_type_enum = indicator_schemas.IoCTypeEnum(ioc_type_str)
-
-                ioc_create_payload = {
-                    "value": ioc_json.get("value"), "type": ioc_type_enum,
-                    "description": ioc_json.get("description"), "source_name": source_name_for_iocs,
-                    "is_active": ioc_json.get("is_active", True), "confidence": ioc_json.get("confidence"),
-                    "tags": ioc_json.get("tags", []),
-                    "first_seen": current_time, "last_seen": current_time,
-                    "attributed_apt_group_ids": [apt_db_id] if apt_db_id else []
-                }
+                ioc_create_payload = {"value": ioc_json.get("value"), "type": ioc_type_enum,
+                                      "description": ioc_json.get("description"), "source_name": source_name_for_iocs,
+                                      "is_active": ioc_json.get("is_active", True),
+                                      "confidence": ioc_json.get("confidence"), "tags": ioc_json.get("tags", []),
+                                      "first_seen": current_time, "last_seen": current_time,
+                                      "attributed_apt_group_ids": [apt_db_id] if apt_db_id else []}
                 cleaned_payload = {k: v for k, v in ioc_create_payload.items() if v is not None}
                 ioc_to_add = indicator_schemas.IoCCreate(**cleaned_payload)
-
-                # Викликаємо метод з IndicatorService для додавання IoC
-                # Йому потрібен db для валідації APT ID, якщо він це робить сам
-                created_ioc_response = indicator_service.add_ioc(db=db, es_writer=es_writer,
-                                                                 ioc_create_data=ioc_to_add)
+                created_ioc_response = indicator_service.add_ioc(db=db, es_writer=es_writer, ioc_create_data=ioc_to_add,
+                                                                 apt_service=apt_service)
                 if created_ioc_response:
                     iocs_created_count += 1
                 else:
                     iocs_failed_count += 1
             except (ValueError, ValidationError) as e:
-                print(f"Skipping IoC due to error: {e}. IoC data: {ioc_json}")
-                iocs_failed_count += 1
-
+                print(f"Skipping IoC due to error: {e}. IoC data: {ioc_json}"); iocs_failed_count += 1
     print(f"IoCs for source '{source_name_for_iocs}': Added {iocs_created_count}, Failed {iocs_failed_count}")
+
+
+def seed_default_threshold_rules(db: Session, correlation_service: CorrelationService):
+    """Створює дефолтні порогові правила кореляції."""
+    print("\n--- Seeding Default Threshold Correlation Rules ---")
+    created_count = 0
+    skipped_count = 0
+
+    threshold_rules_data = [
+        {
+            "name": "Default: High Number of Failed Logins (by Username)",
+            "description": "Detects 5 or more failed login attempts for the same username within 10 minutes.",
+            "is_enabled": True,
+            "rule_type": CorrelationRuleTypeEnum.THRESHOLD_LOGIN_FAILURES,
+            "event_source_type": ["syslog_auth_failure", "authentication"],  # Залежить від твоєї нормалізації
+            "threshold_count": 5,
+            "threshold_time_window_minutes": 10,
+            "aggregation_fields": [EventFieldToMatchTypeEnum.USERNAME, EventFieldToMatchTypeEnum.HOSTNAME],
+            # Групувати за користувачем та хостом
+            "generated_offence_title_template": "Brute-force (User): {actual_count} failed logins for '{aggregation_key_info}' in {time_window_minutes}m",
+            "generated_offence_severity": OffenceSeverityEnum.MEDIUM
+        },
+        {
+            "name": "Default: High Number of Failed Logins (by Source IP)",
+            "description": "Detects 10 or more failed login attempts from the same source IP within 5 minutes.",
+            "is_enabled": True,
+            "rule_type": CorrelationRuleTypeEnum.THRESHOLD_LOGIN_FAILURES,
+            "event_source_type": ["syslog_auth_failure", "authentication"],
+            "threshold_count": 10,
+            "threshold_time_window_minutes": 5,
+            "aggregation_fields": [EventFieldToMatchTypeEnum.SOURCE_IP, EventFieldToMatchTypeEnum.HOSTNAME],
+            # Групувати за IP джерела та хостом призначення
+            "generated_offence_title_template": "Brute-force (IP): {actual_count} failed logins from '{aggregation_key_info}' in {time_window_minutes}m",
+            "generated_offence_severity": OffenceSeverityEnum.MEDIUM
+        },
+        {
+            "name": "Default: Potential Data Exfiltration (Large Outbound Traffic)",
+            "description": "Detects if an internal host sends more than 100MB of data to a single external IP within 15 minutes.",
+            "is_enabled": True,
+            "rule_type": CorrelationRuleTypeEnum.THRESHOLD_DATA_EXFILTRATION,
+            "event_source_type": ["netflow", "flow"],  # Події з NetFlow
+            "threshold_count": 100 * 1024 * 1024,  # 100 MB в байтах
+            "threshold_time_window_minutes": 15,
+            "aggregation_fields": [EventFieldToMatchTypeEnum.SOURCE_IP, EventFieldToMatchTypeEnum.DESTINATION_IP],
+            # Групувати за парою src-dst
+            "generated_offence_title_template": "Data Exfil Alert: {aggregation_key_info} sent {actual_sum_bytes_human} in {time_window_minutes}m",
+            # Потрібен хелпер для actual_sum_bytes_human
+            "generated_offence_severity": OffenceSeverityEnum.HIGH
+        }
+    ]
+
+    for rule_data in threshold_rules_data:
+        existing_rule = db.query(CorrelationRule).filter(CorrelationRule.name == rule_data["name"]).first()
+        if not existing_rule:
+            try:
+                rule_create_schema = CorrelationRuleCreate(**rule_data)
+                correlation_service.create_correlation_rule(db, rule_create_schema)
+                print(f"CREATED default threshold rule: {rule_data['name']}")
+                created_count += 1
+            except Exception as e:
+                print(f"Error creating default threshold rule '{rule_data['name']}': {e}")
+                skipped_count += 1
+        else:
+            # print(f"SKIPPED (already exists): {rule_data['name']}")
+            skipped_count += 1
+
+    print(f"Default threshold rules processed. Created: {created_count}, Skipped: {skipped_count}")
+    return {"created": created_count, "skipped": skipped_count}
 
 
 def seed_initial_data(db: Session):
     print("Starting data seeding...")
     ioc_source_service = IoCSourceService()
     apt_service = APTGroupService()
-    indicator_service = IndicatorService()  # Створюємо екземпляр IndicatorService
+    indicator_service = IndicatorService()
+    correlation_service = CorrelationService()
 
-    # 1. Створення таблиць (якщо потрібно, але краще через Alembic)
     try:
         print("Ensuring all database tables are created (via Base.metadata.create_all)...")
         Base.metadata.create_all(bind=engine)
         print("Database tables checked/created.")
     except Exception as e:
-        print(f"Warning: Error during Base.metadata.create_all: {e}. Assuming tables exist or managed by Alembic.")
+        print(f"Warning: Error during Base.metadata.create_all: {e}.")
 
-    # 2. Завантаження даних APT з JSON та створення/оновлення їх в PostgreSQL
-    all_apt_data_from_file = load_mock_data_from_file()  # Використовуємо нову функцію
+    all_apt_data_from_file = load_mock_data_from_file()
     apt_id_map = {}
     if all_apt_data_from_file:
         print(f"Loaded {len(all_apt_data_from_file)} APT entries from JSON file.")
-        apt_id_map = seed_apt_groups(db, apt_service, all_apt_data_from_file)  # Використовуємо нову функцію
+        apt_id_map = seed_apt_groups(db, apt_service, all_apt_data_from_file)
         print(f"Ensured APT groups exist in PostgreSQL. DB ID Map: {apt_id_map}")
     else:
-        print("No APT data found in JSON file. APTs and their IoCs will not be seeded.")
+        print("No APT data found in JSON file. Some seeding steps might be skipped.")
 
-    # 3. Створення тестових Джерел IoC в PostgreSQL
+    # ... (код створення Джерел IoC) ...
     print("\n--- Seeding IoC Sources ---")
     ioc_sources_to_seed_data = [
         {"name": "APT Report Feed (MISP-like)", "type": ioc_source_schemas.IoCSourceTypeEnum.MISP,
@@ -185,56 +235,66 @@ def seed_initial_data(db: Session):
         {"name": "APT Report Feed (OpenCTI-like)", "type": ioc_source_schemas.IoCSourceTypeEnum.OPENCTI,
          "description": "Simulates IoCs from the APT report for OpenCTI-like source."},
         {"name": "Internal Manual Additions", "type": ioc_source_schemas.IoCSourceTypeEnum.INTERNAL,
-         "description": "Source for manually added IoCs."}
-    ]
-
+         "description": "Source for manually added IoCs."}]
     created_ioc_sources_for_seeding: List[ioc_source_models.IoCSource] = []
     for source_def in ioc_sources_to_seed_data:
         existing_source = ioc_source_service.get_ioc_source_by_name(db, name=source_def["name"])
         if existing_source:
-            print(f"IoC Source '{source_def['name']}' already exists (ID: {existing_source.id}). Using existing.")
             created_ioc_sources_for_seeding.append(existing_source)
         else:
             try:
-                source_create_schema = ioc_source_schemas.IoCSourceCreate(**source_def)
-                created = ioc_source_service.create_ioc_source(db, source_create_schema)
-                print(f"Created IoC Source: '{created.name}' (ID: {created.id})")
-                created_ioc_sources_for_seeding.append(created)
+                created = ioc_source_service.create_ioc_source(db, ioc_source_schemas.IoCSourceCreate(
+                    **source_def)); created_ioc_sources_for_seeding.append(created)
             except Exception as e:
                 print(f"Error creating IoC Source '{source_def['name']}': {e}")
+    if created_ioc_sources_for_seeding: print(f"IoC Sources seeded/verified: {len(created_ioc_sources_for_seeding)}")
 
-    # 4. Завантаження IoC в Elasticsearch для певних джерел
+    # ... (код завантаження IoC в Elasticsearch) ...
     if all_apt_data_from_file and created_ioc_sources_for_seeding:
         try:
             es_host_url = f"http://{settings.ELASTICSEARCH_HOST}:{settings.ELASTICSEARCH_PORT_API}"
             es_writer = ElasticsearchWriter(es_hosts=[es_host_url])
             print(f"\nElasticsearchWriter initialized for IoC seeding to {es_host_url}.")
-
-            # Завантажуємо IoC, використовуючи наш JSON, але для конкретних джерел
-            # Наприклад, для джерела "APT Report Feed (MISP-like)"
             misp_like_source = next(
                 (s for s in created_ioc_sources_for_seeding if s.name == "APT Report Feed (MISP-like)"), None)
             if misp_like_source and misp_like_source.is_enabled:
-                # Логіка _generate_iocs_from_mock_data тепер не потрібна в IoCSourceService,
-                # оскільки ми завантажуємо дані з файлу тут і передаємо їх для створення IoC.
-                # Метод fetch_and_store_iocs_from_source тепер має просто приймати список IoCCreate.
-                # Або ми можемо залишити його, але він буде використовувати ці функції.
-                # Поки що, для простоти, зробимо завантаження IoC тут.
-                seed_iocs_for_apts(db, indicator_service, es_writer, all_apt_data_from_file, apt_id_map,
+                seed_iocs_for_apts(db, indicator_service, apt_service, es_writer, all_apt_data_from_file, apt_id_map,
                                    misp_like_source.name)
             else:
                 print("MISP-like source not found or not enabled, skipping IoC seeding for it.")
-
-            # Можна додати аналогічно для інших типів джерел, якщо потрібно різний набір IoC
-
         except ConnectionError as e:
             print(f"Could not connect to Elasticsearch. IoCs from file will not be seeded into ES: {e}")
         except Exception as e_es:
-            print(f"An error occurred while trying to seed IoCs into Elasticsearch: {e_es}")
-            import traceback
-            traceback.print_exc()
+            print(f"An error occurred while trying to seed IoCs into Elasticsearch: {e_es}"); import \
+                traceback; traceback.print_exc()
     else:
         print("Skipping IoC seeding into Elasticsearch as APT data or IoC sources are not available.")
+
+    # --- Завантаження дефолтних правил кореляції (на основі APT з JSON) ---
+    if all_apt_data_from_file:
+        print("\n--- Loading Default IoC-Match Correlation Rules (based on APTs from JSON) ---")
+        try:
+            stats_ioc_rules = correlation_service.load_default_rules_from_apt_data(db, all_apt_data_from_file)
+            print(
+                f"Default IoC-match correlation rules processed. Created: {stats_ioc_rules.get('created')}, Skipped: {stats_ioc_rules.get('skipped')}")
+        except AttributeError:  # Якщо метод ще не реалізований
+            print(
+                "WARNING: Method 'load_default_rules_from_apt_data' not found in CorrelationService. Skipping IoC-match default rules.")
+        except Exception as e_rules:
+            print(f"An error occurred while loading default IoC-match correlation rules: {e_rules}")
+            import traceback;
+            traceback.print_exc()
+
+    # --- ДОДАНО: Завантаження дефолтних ПОРОГОВИХ правил кореляції ---
+    print("\n--- Loading Default Threshold Correlation Rules ---")
+    try:
+        stats_threshold_rules = seed_default_threshold_rules(db, correlation_service)
+        # Ми викликаємо нову функцію, тому статистика не потрібна з неї напряму, вона сама друкує
+    except Exception as e_thresh_rules:
+        print(f"An error occurred while loading default threshold correlation rules: {e_thresh_rules}")
+        import traceback;
+        traceback.print_exc()
+    # ------------------------------------------------------------------
 
     print("\nData seeding finished.")
 
@@ -246,7 +306,7 @@ if __name__ == "__main__":
         seed_initial_data(db)
     except Exception as e:
         print(f"An critical error occurred during the seeding process: {e}")
-        import traceback
+        import traceback;
 
         traceback.print_exc()
     finally:
