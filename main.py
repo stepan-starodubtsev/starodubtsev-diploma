@@ -9,6 +9,7 @@ from app.modules.data_ingestion.service import DataIngestionService  # <--- Ім
 from app.modules.ioc_sources import api as ioc_sources_api  # <--- НОВИЙ
 from app.modules.apt_groups import api as apt_groups_api  # <--- НОВИЙ
 from app.modules.indicators import api as indicators_api  # <--- НОВИЙ
+from app.modules.correlation import api as correlation_api
 
 # ... інші імпорти ...
 
@@ -74,6 +75,8 @@ app.include_router(device_interaction_api.router)
 app.include_router(ioc_sources_api.router)  # <--- ДОДАНО
 app.include_router(apt_groups_api.router)  # <--- ДОДАНО
 app.include_router(indicators_api.router)  # <--- ДОДАНО
+
+app.include_router(correlation_api.router)
 
 
 @app.get("/")

@@ -48,16 +48,13 @@ def parse_syslog_message_rfc3164_like(line: str,
 
     # 1. Спроба розбору стандартного RFC3164-подібного формату
 
-    print("Line: ", line)
     match_rfc3164 = SYSLOG_RFC3164_REGEX.match(line)
-    print("match_rfc3164: ", match_rfc3164)
     if match_rfc3164:
         data = match_rfc3164.groupdict()
         parsed_format = "rfc3164"
     else:
         # 2. Спроба розбору більш загального Syslog формату
         match_generic_syslog = SYSLOG_REGEX_GENERIC.match(line)
-        print("match_generic_syslog: ", match_generic_syslog)
         if match_generic_syslog:
             data = match_generic_syslog.groupdict()
             parsed_format = "generic_syslog"
@@ -77,7 +74,6 @@ def parse_syslog_message_rfc3164_like(line: str,
             # 3. Спроба розбору спрощеного формату Mikrotik
             # print(f"DEBUG: Trying MIKROTIK_SIMPLE_FORMAT_REGEX on line: '{line}'") # Для відладки
             match_mikrotik = MIKROTIK_SIMPLE_FORMAT_REGEX.match(line)
-            print("match_mikrotik: ", match_mikrotik)
             if match_mikrotik:
                 data = match_mikrotik.groupdict()
                 parsed_format = "mikrotik_simple"

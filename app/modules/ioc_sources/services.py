@@ -161,7 +161,7 @@ class IoCSourceService:
 
         for ioc_to_add_schema in iocs_to_create:
             # Викликаємо метод з IndicatorService для додавання одного IoC
-            created_ioc_response = indicator_service.add_manual_ioc(
+            created_ioc_response = indicator_service.add_ioc(
                 db=db,  # db потрібен для IndicatorService для валідації APT ID
                 es_writer=es_writer,
                 ioc_create_data=ioc_to_add_schema,

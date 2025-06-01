@@ -23,6 +23,7 @@ from app.core.database import Base
 from app.database.postgres_models import device_models
 from app.database.postgres_models import ioc_source_models
 from app.database.postgres_models import threat_actor_models
+from app.database.postgres_models import correlation_models
 
 from app.core.config import settings
 

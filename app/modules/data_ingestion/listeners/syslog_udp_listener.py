@@ -4,7 +4,7 @@ import threading  # Для запуску в окремому потоці
 
 
 # Функція зворотного виклику, яка буде обробляти кожне отримане повідомлення
-# Пізніше ми передамо сюди реальний обробник з service.py
+# Пізніше ми передамо сюди реальний обробник з services.py
 def default_syslog_handler(raw_message: bytes, client_address: tuple):
     try:
         decoded_message = raw_message.decode('utf-8', errors='replace')

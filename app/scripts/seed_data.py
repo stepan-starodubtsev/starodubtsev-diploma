@@ -140,8 +140,8 @@ def seed_iocs_for_apts(
 
                 # Викликаємо метод з IndicatorService для додавання IoC
                 # Йому потрібен db для валідації APT ID, якщо він це робить сам
-                created_ioc_response = indicator_service.add_manual_ioc(db=db, es_writer=es_writer,
-                                                                        ioc_create_data=ioc_to_add)
+                created_ioc_response = indicator_service.add_ioc(db=db, es_writer=es_writer,
+                                                                 ioc_create_data=ioc_to_add)
                 if created_ioc_response:
                     iocs_created_count += 1
                 else:
