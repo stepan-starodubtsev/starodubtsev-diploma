@@ -11,11 +11,11 @@ import DevicesPage from "./pages/DevicesPage.jsx";
 import IoCSourcesPage from "./pages/IoCSourcesPage.jsx";
 import APTGroupsPage from "./pages/APTGroupsPage.jsx";
 import IndicatorsPage from "./pages/IndicatorsPage.jsx";
-import CorrelationRulesPage from "./pages/CorrelationRulesPage.jsx"; // <--- НОВИЙ ХЕДЕР
+import CorrelationRulesPage from "./pages/CorrelationRulesPage.jsx";
+import OffencesPage from "./pages/OffencesPage.jsx"; // <--- НОВИЙ ХЕДЕР
 
 // Приклади сторінок (створи їх у src/pages/)
 const DashboardPage = () => <div>Дашборд</div>; // Заглушка
-const OffencesPage = () => <div>Сторінка Офенсів</div>; // Заглушка
 // const ProfilePage = () => <div>Профіль Користувача</div>; // Заглушка
 
 

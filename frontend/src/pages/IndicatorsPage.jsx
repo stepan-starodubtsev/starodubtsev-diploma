@@ -121,13 +121,13 @@ const IndicatorsPage = observer(() => {
             <Box component={Paper} elevation={1} sx={{ p: 2, mb: 2 }}>
                 <Typography variant="h6" gutterBottom>Фільтри та Пошук</Typography>
                 <Grid container spacing={2} alignItems="flex-end">
-                    <Grid item xs={12} sm={4}>
+                    <Grid item size={2}>
                         <TextField
                             fullWidth label="Значення IoC" variant="outlined" size="small"
                             value={searchValue} onChange={(e) => setSearchValue(e.target.value)}
                         />
                     </Grid>
-                    <Grid item xs={12} sm={3}>
+                    <Grid item size={2}>
                         <FormControl fullWidth size="small" variant="outlined">
                             <InputLabel>Тип IoC</InputLabel>
                             <Select
@@ -142,7 +142,7 @@ const IndicatorsPage = observer(() => {
                             </Select>
                         </FormControl>
                     </Grid>
-                    <Grid item xs={12} sm={3}>
+                    <Grid item size={2}>
                         <FormControl fullWidth size="small" variant="outlined">
                             <InputLabel>Дата Створення</InputLabel>
                             <Select
