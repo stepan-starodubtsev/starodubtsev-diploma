@@ -129,8 +129,8 @@ class IndicatorService:
                                 "is_active": source_data.get('is_active', True),
                                 "confidence": source_data.get('confidence'), "tags": source_data.get('tags', []),
                                 "first_seen": source_data.get('first_seen'), "last_seen": source_data.get('last_seen'),
-                                "created_at": source_data.get('created_at_siem'),
-                                "updated_at": source_data.get('updated_at_siem'),
+                                "created_at_siem": source_data.get('created_at_siem'),
+                                "updated_at_siem": source_data.get('updated_at_siem'),
                                 "attributed_apt_group_ids": source_data.get('attributed_apt_group_ids', [])}
         try:
             return indicator_schemas.IoCResponse(**ioc_response_payload)
@@ -176,8 +176,8 @@ class IndicatorService:
                 # Створюємо відповідь на основі ioc_doc_internal (де дати ще datetime)
                 response_data_dict = ioc_doc_internal.copy()
                 response_data_dict['ioc_id'] = ioc_es_id
-                response_data_dict['created_at'] = ioc_doc_internal["created_at_siem"]  # Вже datetime
-                response_data_dict['updated_at'] = ioc_doc_internal["updated_at_siem"]  # Вже datetime
+                response_data_dict['created_at_siem'] = ioc_doc_internal["created_at_siem"]  # Вже datetime
+                response_data_dict['updated_at_siem'] = ioc_doc_internal["updated_at_siem"]  # Вже datetime
                 # Тип IoC для відповіді має бути Enum, якщо він був таким у ioc_create_data
                 response_data_dict['type'] = ioc_create_data.type
                 # tags та attributed_apt_group_ids вже оновлені в ioc_doc_internal

@@ -52,7 +52,7 @@ const IndicatorTable = ({
                                     {(ioc.attributed_apt_group_ids || []).join(', ') || 'N/A'}
                                 </TableCell>
                                 <TableCell>
-                                    {ioc.updated_at ? format(new Date(ioc.updated_at), 'yyyy-MM-dd HH:mm') : 'N/A'}
+                                    {ioc.updated_at_siem ? format(new Date(ioc.updated_at_siem), 'yyyy-MM-dd HH:mm') : 'N/A'}
                                 </TableCell>
                                 <TableCell align="center">
                                     <Tooltip title="Прив'язати до APT">

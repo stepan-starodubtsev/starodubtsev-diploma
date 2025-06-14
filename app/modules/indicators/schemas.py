@@ -45,8 +45,8 @@ class IoCUpdate(BaseModel): # Окремо для оновлення, щоб н�
 
 class IoCResponse(IoCBase):
     ioc_id: str = Field(..., description="Унікальний ID індикатора з Elasticsearch")
-    created_at: datetime # Час додавання в нашу SIEM систему
-    updated_at: datetime # Час останнього оновлення в нашій SIEM системі
+    created_at_siem: datetime # Час додавання в нашу SIEM систему
+    updated_at_siem: datetime # Час останнього оновлення в нашій SIEM системі
     # attributed_apt_group_ids вже є в IoCBase
 
     class Config:

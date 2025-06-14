@@ -1,28 +1,27 @@
 # app/modules/correlation/services.py
+import json
+from datetime import datetime, timezone, timedelta
+from typing import List, Optional, Dict, Any
+
+from elasticsearch import Elasticsearch, exceptions as es_exceptions
+from pydantic import ValidationError
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-from typing import List, Optional, Dict, Any
-from datetime import datetime, timezone, timedelta
 
-from . import schemas as correlation_schemas
 from app.database.postgres_models.correlation_models import CorrelationRule, Offence
 from app.modules.correlation.schemas import (
     CorrelationRuleTypeEnum,
     EventFieldToMatchTypeEnum,
     IoCTypeToMatchEnum,
-    OffenceSeverityEnum,
-    OffenceStatusEnum
+    OffenceSeverityEnum
 )
-
-from app.modules.indicators.services import IndicatorService
-from app.modules.indicators import schemas as indicator_schemas
 from app.modules.data_ingestion.writers.elasticsearch_writer import ElasticsearchWriter
-from elasticsearch import Elasticsearch, exceptions as es_exceptions
-from pydantic import ValidationError
-
+from app.modules.device_interaction.services import DeviceService
+from app.modules.indicators import schemas as indicator_schemas
+from app.modules.indicators.services import IndicatorService
 # --- ДОДАНО: Імпорти для сервісів реагування та взаємодії з пристроями ---
 from app.modules.response.services import ResponseService
-from app.modules.device_interaction.services import DeviceService
+from . import schemas as correlation_schemas
 from ..apt_groups.services import APTGroupService
 
 
@@ -113,9 +112,9 @@ class CorrelationService:
 
             rules_to_check_create = [
                 {"name_suffix": "IP IoCs (Outbound)", "event_field": EventFieldToMatchTypeEnum.DESTINATION_IP,
-                 "title_template": f"Outbound Traffic to {apt_name} IoC: {{event.source_ip}} -> {{ioc_value}}"},
+                 "title_template": f"Outbound Traffic to {apt_name} IoC: {{event[source_ip]}} -> {{ioc_value}}"},
                 {"name_suffix": "IP IoCs (Inbound)", "event_field": EventFieldToMatchTypeEnum.SOURCE_IP,
-                 "title_template": f"Inbound Traffic from {apt_name} IoC: {{ioc_value}} -> {{event.destination_ip}}"}
+                 "title_template": f"Inbound Traffic from {apt_name} IoC: {{ioc_value}} -> {{event[destination_ip]}}"}
             ]
             for r_data in rules_to_check_create:
                 rule_name = f"Default: Traffic {r_data['name_suffix'].split(' ')[0]} {apt_name} {r_data['name_suffix'].split(' ')[1]}"  # Формуємо назву
@@ -267,79 +266,137 @@ class CorrelationService:
 
             # --- Обробка IOC_MATCH_IP ---
             if rule.rule_type == CorrelationRuleTypeEnum.IOC_MATCH_IP:
-                # ... (код для IOC_MATCH_IP з попередньої відповіді, включаючи створення offence_create_data)
                 if not rule.event_field_to_match or not rule.ioc_type_to_match: print(
                     f"Rule '{rule.name}' IOC_MATCH_IP missing fields."); continue
-                ioc_query_filters = [{"term": {"is_active": True}}]
-                if rule.ioc_type_to_match: ioc_query_filters.append(
-                    {"term": {"type.keyword": rule.ioc_type_to_match.value}})
+                ioc_query_filters = [{"term": {"is_active": True}}]  # is_active - boolean, term працює
+
+                # Для поля 'type', оскільки воно вже типу 'keyword', .keyword не потрібен
+                if rule.ioc_type_to_match:
+                    ioc_query_filters.append(
+                        {"term": {"type": rule.ioc_type_to_match.value}}
+                    )
+
+                # Для поля 'tags', оскільки воно теж 'keyword', .keyword не потрібен
                 if rule.ioc_tags_match:
-                    for tag in rule.ioc_tags_match: ioc_query_filters.append({"term": {"tags.keyword": tag}})
-                if rule.ioc_min_confidence is not None: ioc_query_filters.append(
-                    {"range": {"confidence": {"gte": rule.ioc_min_confidence}}})
+                    # 'terms' query ефективніший для пошуку по кількох значеннях, але 'term' для кожного тегу теж працює
+                    ioc_query_filters.append({"terms": {"tags": rule.ioc_tags_match}})
+
+                if rule.ioc_min_confidence is not None:
+                    ioc_query_filters.append(
+                        {"range": {"confidence": {"gte": rule.ioc_min_confidence}}}
+                    )
                 ioc_query_body = {"query": {"bool": {"filter": ioc_query_filters}}, "size": 10000}
                 try:
                     relevant_iocs_resp = es_client.search(index="siem-iocs-*", body=ioc_query_body)
                     active_iocs_for_rule_map: Dict[str, indicator_schemas.IoCResponse] = {}
                     for hit in relevant_iocs_resp.get('hits', {}).get('hits', []):
-                        ioc_data = hit.get('_source', {});
+                        ioc_data = hit.get('_source', {})
                         ioc_data['ioc_id'] = hit.get('_id')
                         try:
-                            ioc_obj = indicator_schemas.IoCResponse(**ioc_data);
+                            ioc_obj = indicator_schemas.IoCResponse(**ioc_data)
                             active_iocs_for_rule_map[
                                 ioc_obj.value] = ioc_obj
-                        except ValidationError:
+                        except ValidationError as e:
+                            print(e)
                             pass
                 except es_exceptions.ElasticsearchWarning as e_ioc:
-                    print(f"Error fetching IoCs for rule '{rule.name}': {e_ioc}");
+                    print(f"Error fetching IoCs for rule '{rule.name}': {e_ioc}")
                     continue
                 if not active_iocs_for_rule_map: continue
                 event_field_to_check = rule.event_field_to_match.value
-                event_query_body = {"query": {"bool": {"must": [{"exists": {"field": event_field_to_check}}, {
-                    "terms": {f"{event_field_to_check}.keyword": list(active_iocs_for_rule_map.keys())}}], "filter": [
-                    {"range": {"@timestamp": {"gte": time_from.isoformat()}}}]}}, "size": 200,
-                                    "sort": [{"@timestamp": "desc"}]}
-                if rule.event_source_type:
-                    event_source_terms = [{"term": {"event_category.keyword": est}} for est in rule.event_source_type]
-                    if event_source_terms: event_query_body["query"]["bool"]["filter"].append(
-                        {"bool": {"should": event_source_terms, "minimum_should_match": 1}})
+                ioc_values_list = list(active_iocs_for_rule_map.keys())
+
+                # --- Зміни в логіці формування запиту ---
+
+                # 1. Список фільтрів тепер значно простіший.
+                all_event_filters = [
+                    # 1.1. Жорсткий фільтр за часом по полю `timestamp` з використанням date math.
+                    {
+                        "range": {
+                            "timestamp": {
+                                "gte": "now-7d/d",
+                                "lte": "now/d"
+                            }
+                        }
+                    },
+                    # 1.2. Фільтр наявності поля, яке перевіряється.
+                    {"exists": {"field": event_field_to_check}},
+                    # 1.3. Фільтр, що перевіряє збіг значення поля з одним з IoC.
+                    {"terms": {event_field_to_check: ioc_values_list}}
+                ]
+
+                # 2. Блок фільтрації за event_category/event_type ПОВНІСТЮ ВИДАЛЕНО,
+                #    оскільки його немає у вашому бажаному запиті.
+
+                # 3. Фінальний запит до Elasticsearch згідно вашого зразка.
+                event_query_body = {
+                    "query": {
+                        "bool": {
+                            "filter": all_event_filters
+                        }
+                    },
+                    "size": 10,  # Змінено з 200 на 10
+                    "sort": [{"timestamp": "desc"}]  # Змінено з @timestamp на timestamp
+                }
+
+                # Відлагоджувальний вивід
+                print(f"DEBUG: Executing event search query for rule '{rule.name}':")
+                print(json.dumps(event_query_body, indent=2))
+
+                # --- КРОК 3: Виконання запиту та обробка результатів (з мінімальними змінами) ---
                 try:
-                    events_resp = es_client.search(index=["siem-syslog-events-*", "siem-netflow-events-*"],
-                                                   body=event_query_body)
+                    events_resp = es_client.search(
+                        index=["siem-syslog-events-*", "siem-netflow-events-*"],
+                        body=event_query_body
+                    )
                     events_to_process = [hit['_source'] for hit in events_resp.get('hits', {}).get('hits', [])]
+
+                    if not events_to_process:
+                        print("CorrelationEngine: No matching events found for this cycle.")
+
+                    for event_doc in events_to_process:
+                        field_value_in_event = event_doc.get(event_field_to_check)
+                        if str(field_value_in_event) in active_iocs_for_rule_map:
+                            matched_ioc_obj = active_iocs_for_rule_map[str(field_value_in_event)]
+                            if matched_ioc_obj:
+                                # Спрощено отримання часу, оскільки ми шукаємо тільки по 'timestamp'
+                                event_time = event_doc.get('timestamp', 'N/A')
+
+                                offence_title = rule.generated_offence_title_template.format(
+                                    ioc_value=matched_ioc_obj.value,
+                                    ioc_type=str(matched_ioc_obj.type),
+                                    event_source_ip=event_doc.get('source_ip', 'N/A'),
+                                    event_destination_ip=event_doc.get('destination_ip', 'N/A'),
+                                    event_hostname=event_doc.get('hostname', 'N/A'),
+                                    event=event_doc
+                                )
+
+                                # Спрощено словник, оскільки @timestamp більше не релевантний для запиту
+                                trigger_event_summary_dict = {k: str(v)[:250] for k, v in event_doc.items() if
+                                                              k in ['timestamp', 'reporter_ip', 'hostname',
+                                                                    'message', 'source_ip', 'destination_ip',
+                                                                    'event_category', 'event_type']}
+
+                                matched_ioc_details_dict = matched_ioc_obj.model_dump(mode='json')
+
+                                offence_create_data = correlation_schemas.OffenceCreate(title=offence_title,
+                                                                                        description=f"Rule '{rule.name}' matched IoC '{matched_ioc_obj.value}'. Event (reporter: {event_doc.get('reporter_ip')}, timestamp: {event_time})",
+                                                                                        severity=rule.generated_offence_severity,
+                                                                                        correlation_rule_id=rule.id,
+                                                                                        triggering_event_summary=trigger_event_summary_dict,
+                                                                                        matched_ioc_details=matched_ioc_details_dict,
+                                                                                        attributed_apt_group_ids=matched_ioc_obj.attributed_apt_group_ids or [])
+                                db_offence = self.create_offence(db, offence_create_data)
+                                if db_offence:
+                                    try:
+                                        response_service.execute_response_for_offence(db, db_offence, device_service)
+                                    except Exception as e_resp:
+                                        print(
+                                            f"CorrelationEngine: Error during response execution for offence ID {db_offence.id}: {e_resp}")
+
                 except es_exceptions.ElasticsearchWarning as e_evt:
-                    print(f"Error fetching events for rule '{rule.name}': {e_evt}");
-                    continue
-                for event_doc in events_to_process:
-                    field_value_in_event = event_doc.get(event_field_to_check)
-                    if str(field_value_in_event) in active_iocs_for_rule_map:
-                        matched_ioc_obj = active_iocs_for_rule_map[str(field_value_in_event)]
-                        if matched_ioc_obj:
-                            # ... (Генерація offence_title, trigger_event_summary_dict, matched_ioc_details_dict)
-                            offence_title = rule.generated_offence_title_template.format(
-                                ioc_value=matched_ioc_obj.value, ioc_type=str(matched_ioc_obj.type),
-                                event_source_ip=event_doc.get('source_ip', 'N/A'),
-                                event_destination_ip=event_doc.get('destination_ip', 'N/A'),
-                                event_hostname=event_doc.get('hostname', 'N/A'))
-                            trigger_event_summary_dict = {k: str(v)[:250] for k, v in event_doc.items() if
-                                                          k in ['timestamp', '@timestamp', 'reporter_ip', 'hostname',
-                                                                'message', 'source_ip', 'destination_ip',
-                                                                'event_category', 'event_type']}
-                            matched_ioc_details_dict = matched_ioc_obj.model_dump(mode='json')
-                            offence_create_data = correlation_schemas.OffenceCreate(title=offence_title,
-                                                                                    description=f"Rule '{rule.name}' matched IoC '{matched_ioc_obj.value}'. Event (reporter: {event_doc.get('reporter_ip')}, @timestamp: {event_doc.get('@timestamp')})",
-                                                                                    severity=rule.generated_offence_severity,
-                                                                                    correlation_rule_id=rule.id,
-                                                                                    triggering_event_summary=trigger_event_summary_dict,
-                                                                                    matched_ioc_details=matched_ioc_details_dict,
-                                                                                    attributed_apt_group_ids=matched_ioc_obj.attributed_apt_group_ids or [])
-                            db_offence = self.create_offence(db, offence_create_data)
-                            if db_offence:
-                                try:
-                                    response_service.execute_response_for_offence(db, db_offence, device_service)
-                                except Exception as e_resp:
-                                    print(
-                                        f"CorrelationEngine: Error during response execution for offence ID {db_offence.id}: {e_resp}")
+                    print(f"CorrelationEngine: Error fetching events for rule '{rule.name}': {e_evt}")
+                    # continue
 
             # --- Обробка THRESHOLD_LOGIN_FAILURES ---
             elif rule.rule_type == CorrelationRuleTypeEnum.THRESHOLD_LOGIN_FAILURES:

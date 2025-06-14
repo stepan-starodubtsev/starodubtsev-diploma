@@ -57,7 +57,7 @@ const Header = () => {
             <Toolbar>
                 <SecurityIcon sx={{ mr: 2 }} /> {/* Іконка логотипу */}
                 <Typography variant="h6" component="div" sx={{ flexGrow: 1, textDecoration: 'none', color: 'inherit' }} component={RouterLink} to="/">
-                    SIEM ЗСУ (MVP)
+                    SIEM ЗСУ
                 </Typography>
 
                 <Box>
