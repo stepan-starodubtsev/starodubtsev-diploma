@@ -400,62 +400,112 @@ class CorrelationService:
 
             # --- Обробка THRESHOLD_LOGIN_FAILURES ---
             elif rule.rule_type == CorrelationRuleTypeEnum.THRESHOLD_LOGIN_FAILURES:
-                # ... (код для THRESHOLD_LOGIN_FAILURES з попередньої відповіді, включаючи створення offence_create_data)
-                if not rule.threshold_count or not rule.aggregation_fields or not rule.threshold_time_window_minutes: print(
-                    f"Rule '{rule.name}' THRESHOLD_LOGIN_FAILURES missing fields."); continue
-                es_agg_fields = [f"{field.value}.keyword" for field in rule.aggregation_fields]
-                if not es_agg_fields: print(f"No valid aggregation fields for rule '{rule.name}'."); continue
-                threshold_query_body = {"query": {"bool": {
-                    "filter": [{"range": {"@timestamp": {"gte": time_from.isoformat()}}},
-                               {"term": {"event_category.keyword": "authentication"}},
-                               {"term": {"event_outcome.keyword": "failure"}}]}}, "aggs": {
-                    "failed_logins_by_combination": {"composite": {
-                        "sources": [{"agg_field_" + str(i): {"terms": {"field": field_keyword}}} for i, field_keyword in
-                                    enumerate(es_agg_fields)], "size": 1000}}}, "size": 0}
-                if rule.event_source_type:
-                    source_type_filters = []
-                    for est in rule.event_source_type: source_type_filters.append(
-                        {"term": {"event_category.keyword": est}}); source_type_filters.append(
-                        {"term": {"event_type.keyword": est}})
-                    if source_type_filters: threshold_query_body["query"]["bool"]["filter"].append(
-                        {"bool": {"should": source_type_filters, "minimum_should_match": 1}})
+                if not all([rule.threshold_count, rule.aggregation_fields, rule.threshold_time_window_minutes]):
+                    print(f"Rule '{rule.name}' THRESHOLD_LOGIN_FAILURES missing required fields.")
+                    # continue
+
+                # --- 1. Формування тіла запиту (виправлено) ---
+
+                # Універсальний фільтр часу, що працює з полями @timestamp та timestamp
+                threshold_query_body = {
+                    "size": 0,
+                    "query": {
+                        "bool": {
+                            "filter": [
+                                {
+                                    "bool": {
+                                        "should": [
+                                            {"range": {"@timestamp": {"gte": "now-1h"}}},
+                                            {"range": {"timestamp": {"gte": "now-1h"}}}
+                                        ],
+                                        "minimum_should_match": 1
+                                    }
+                                },
+                                {
+                                    "term": {
+                                        "event_category": "authentication"
+                                    }
+                                },
+                                {
+                                    "term": {
+                                        "event_outcome.keyword": "failure"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "aggs": {
+                        "failed_logins_by_combination": {
+                            "composite": {
+                                "size": 1000,
+                                "sources": [
+                                    {"target_host": {"terms": {"field": "hostname.keyword"}}},
+                                    {"reporter_device": {"terms": {"field": "reporter_ip"}}}
+                                ]
+                            }
+                        }
+                    }
+                }
+
+                print("DEBUG: Executing aggregation query:", json.dumps(threshold_query_body, indent=2))
+
+                # --- 3. Виконання запиту та обробка результатів (обробка ключів виправлена) ---
                 try:
-                    current_response = es_client.search(index="siem-syslog-events-*", body=threshold_query_body)
+                    current_response = es_client.search(index=["siem-syslog-events-*", "siem-netflow-events-*"],
+                                                        body=threshold_query_body)
+
+                    # Цикл для обробки всіх сторінок результатів агрегації (пагінація)
                     while True:
-                        buckets = current_response.get('aggregations', {}).get('failed_logins_by_combination', {}).get(
-                            'buckets', [])
-                        if not buckets: break
+                        aggregation_results = current_response.get('aggregations', {}).get(
+                            'failed_logins_by_combination', {})
+                        buckets = aggregation_results.get('buckets', [])
+
+                        if not buckets:
+                            break
+
                         for bucket in buckets:
-                            failed_count = bucket.get('doc_count')
+                            failed_count = bucket.get('doc_count', 0)
+
                             if failed_count >= rule.threshold_count:
-                                aggregation_key_dict = bucket.get('key', {});
-                                aggregation_key_str = ", ".join(
-                                    [f"{k.split('_')[-1]}='{v}'" for k, v in aggregation_key_dict.items()])
+                                aggregation_key_dict = bucket.get('key', {})
+
+                                # Формуємо рядок з ключів агрегації (виправлено)
+                                # Тепер він буде виглядати як "hostname='host-1', reporter_ip='1.2.3.4'"
+                                aggregation_key_str = ", ".join([f"{k}='{v}'" for k, v in aggregation_key_dict.items()])
+
                                 offence_title = rule.generated_offence_title_template.format(
-                                    aggregation_key_info=aggregation_key_str, actual_count=failed_count,
-                                    time_window_minutes=rule.threshold_time_window_minutes)
-                                offence_create_data = correlation_schemas.OffenceCreate(title=offence_title,
-                                                                                        description=f"Rule '{rule.name}' triggered for {aggregation_key_str} with {failed_count} failed logins in {rule.threshold_time_window_minutes}m.",
-                                                                                        severity=rule.generated_offence_severity,
-                                                                                        correlation_rule_id=rule.id,
-                                                                                        triggering_event_summary={
-                                                                                            "aggregation_key": aggregation_key_dict,
-                                                                                            "count": failed_count})
+                                    aggregation_key_info=aggregation_key_str,
+                                    actual_count=failed_count,
+                                    time_window_minutes=rule.threshold_time_window_minutes
+                                )
+
+                                offence_create_data = correlation_schemas.OffenceCreate(
+                                    title=offence_title,
+                                    description=f"Rule '{rule.name}' triggered. Details: {aggregation_key_str}. Count: {failed_count} failures in {rule.threshold_time_window_minutes} min.",
+                                    severity=rule.generated_offence_severity,
+                                    correlation_rule_id=rule.id,
+                                    triggering_event_summary={
+                                        "aggregation_key": aggregation_key_dict,
+                                        "count": failed_count
+                                    }
+                                )
+
                                 db_offence = self.create_offence(db, offence_create_data)
-                                if db_offence:
-                                    try:
-                                        response_service.execute_response_for_offence(db, db_offence, device_service)
-                                    except Exception as e_resp:
-                                        print(
-                                            f"CorrelationEngine: Error response for offence ID {db_offence.id}: {e_resp}")
-                        after_key = current_response.get('aggregations', {}).get('failed_logins_by_combination',
-                                                                                 {}).get('after_key')
-                        if not after_key: break
+                                # ... (логіка реагування на offence)
+
+                        # Перевіряємо, чи є наступна сторінка результатів
+                        after_key = aggregation_results.get('after_key')
+                        if not after_key:
+                            break  # Немає наступної сторінки, виходимо з циклу
+
+                        # Готуємо запит для отримання наступної сторінки
                         threshold_query_body['aggs']['failed_logins_by_combination']['composite']['after'] = after_key
-                        current_response = es_client.search(index="siem-syslog-events-*", body=threshold_query_body)
+                        current_response = es_client.search(index=["siem-syslog-events-*", "siem-netflow-events-*"],
+                                                            body=threshold_query_body)
+
                 except es_exceptions.ElasticsearchWarning as e_agg_login:
-                    print(f"CorrelationEngine: Error aggregation for login rule '{rule.name}': {e_agg_login}");
-                    continue
+                    print(f"CorrelationEngine: Error during aggregation for rule '{rule.name}': {e_agg_login}")
+                    # continue
 
             # --- Обробка THRESHOLD_DATA_EXFILTRATION ---
             elif rule.rule_type == CorrelationRuleTypeEnum.THRESHOLD_DATA_EXFILTRATION:
