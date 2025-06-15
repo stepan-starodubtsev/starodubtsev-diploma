@@ -9,7 +9,8 @@ import indicatorStore from '../stores/indicatorStore';
 import IndicatorTable from '../components/indicators/IndicatorTable'; // Створимо далі
 import IndicatorFormModal from '../components/indicators/IndicatorFormModal.jsx'; // Створимо далі
 import LinkAptToIoCModal from '../components/indicators/LinkAptToIoCModal'; // Створимо далі
-import { IoCTypeEnum } from '../constants.js'; // Припускаємо, що Enum тут
+import { IoCTypeEnum } from '../constants.js';
+import aptGroupStore from "../stores/aptGroupStore.js"; // Припускаємо, що Enum тут
 
 const IndicatorsPage = observer(() => {
     const [formModalOpen, setFormModalOpen] = useState(false);
@@ -22,6 +23,7 @@ const IndicatorsPage = observer(() => {
 
     useEffect(() => {
         indicatorStore.loadIoCs(); // Початкове завантаження
+        aptGroupStore.fetchAptGroups();
     }, []);
 
     const handleSearch = () => {
@@ -206,8 +208,7 @@ const IndicatorsPage = observer(() => {
                     onClose={handleCloseModal}
                     onLink={handleLinkApt}
                     ioc={linkingIoC} // Передаємо об'єкт IoC
-                    // Тут потрібно буде завантажити список APT для вибору
-                    // aptGroupStore={aptGroupStore} // Приклад
+                    aptGroupStore={aptGroupStore} // Приклад
                 />
             )}
 

@@ -365,9 +365,19 @@ class IndicatorService:
             if not search_res['hits']['hits']: print(f"IoC ES_ID '{ioc_es_id}' not found."); return None
             hit_for_update = search_res['hits']['hits'][0];
             target_index = hit_for_update['_index']
-            update_script = {"script": {
-                "source": "if (ctx._source.attributed_apt_group_ids == null) { ctx._source.attributed_apt_group_ids = new ArrayList(); } if (!ctx._source.attributed_apt_group_ids.contains(params.apt_id)) { ctx._source.attributed_apt_group_ids.add(params.apt_id); ctx._source.updated_at_siem = params.now; } else { ctx.op = 'noop'; }",
-                "lang": "painless", "params": {"apt_id": apt_group_id, "now": datetime.now(timezone.utc).isoformat()}}}
+            update_script = {
+                "script": {
+                    "source": """
+                        ctx._source.attributed_apt_group_ids = [params.apt_id];
+                        ctx._source.updated_at_siem = params.now;
+                    """,
+                    "lang": "painless",
+                    "params": {
+                        "apt_id": apt_group_id,
+                        "now": datetime.now(timezone.utc).isoformat()
+                    }
+                }
+            }
             es_client.update(index=target_index, id=ioc_es_id, body=update_script, refresh=True)
             print(f"Successfully linked APT ID {apt_group_id} to IoC ES_ID {ioc_es_id}")
             updated_hit = es_client.get(index=target_index, id=ioc_es_id)
