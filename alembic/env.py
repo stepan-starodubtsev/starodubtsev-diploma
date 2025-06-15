@@ -25,6 +25,7 @@ from app.database.postgres_models import ioc_source_models
 from app.database.postgres_models import threat_actor_models
 from app.database.postgres_models import correlation_models
 from app.database.postgres_models import response_models  # <--- ДОДАЙ ЦЕЙ РЯДОК
+from app.database.postgres_models import user_models
 
 from app.core.config import settings
 

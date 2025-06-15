@@ -22,6 +22,7 @@ class Settings:
 
     ELASTICSEARCH_HOST: str = os.getenv("ELASTICSEARCH_HOST", "localhost")  # Для запуску Python поза Docker
     ELASTICSEARCH_PORT_API: int = int(os.getenv("ELASTICSEARCH_PORT_API", "9200"))  # Для запуску Python поза Docker
+    JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY")
 
 settings = Settings()
 

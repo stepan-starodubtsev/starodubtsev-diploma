@@ -1,5 +1,5 @@
 # app/main.py
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from contextlib import asynccontextmanager  # Для lifespan в нових версіях FastAPI/Starlette
 
 from starlette.middleware.cors import CORSMiddleware
@@ -13,7 +13,9 @@ from app.modules.apt_groups import api as apt_groups_api  # <--- НОВИЙ
 from app.modules.indicators import api as indicators_api  # <--- НОВИЙ
 from app.modules.correlation import api as correlation_api
 from app.modules.response import api as response_api # <--- ДОДАНО
-
+from app.modules.auth import api as auth_api
+from app.modules.users import api as users_api
+from app.core.dependencies import get_current_user
 # ... інші імпорти ...
 
 # --- Створення екземпляра сервісу прийому даних ---
@@ -85,15 +87,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 # Підключаємо роутер для модуля взаємодії з пристроями
-app.include_router(device_interaction_api.router)  # Префікс вже визначений в самому роутері
-app.include_router(device_interaction_api.router)
-app.include_router(ioc_sources_api.router)  # <--- ДОДАНО
-app.include_router(apt_groups_api.router)  # <--- ДОДАНО
-app.include_router(indicators_api.router)  # <--- ДОДАНО
+app.include_router(auth_api.router)
 
-app.include_router(correlation_api.router)
+# 2. Роутер керування користувачами - вже захищений всередині (тільки для адмінів)
+app.include_router(users_api.router)
 
-app.include_router(response_api.router) # <--- ДОДАНО
+# 3. Захист всіх інших роутерів
+# Тепер кожен запит до цих ендпоїнтів вимагатиме дійсний 'Authorization: Bearer <token>' заголовок
+common_dependency = Depends(get_current_user)
+
+app.include_router(device_interaction_api.router, dependencies=[common_dependency])
+app.include_router(indicators_api.router, dependencies=[common_dependency])
+app.include_router(correlation_api.router, dependencies=[common_dependency])
+app.include_router(response_api.router, dependencies=[common_dependency])
+app.include_router(apt_groups_api.router, dependencies=[common_dependency])
+app.include_router(ioc_sources_api.router, dependencies=[common_dependency])
 
 @app.get("/")
 async def root():

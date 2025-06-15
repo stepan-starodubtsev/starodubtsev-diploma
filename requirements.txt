@@ -1,3 +1,4 @@
+# requirements.txt
 fastapi~=0.115.12
 routeros-api~=0.21.0
 SQLAlchemy~=2.0.41
@@ -7,3 +8,5 @@ cryptography~=45.0.3
 alembic~=1.16.1
 elasticsearch~=8.14.0
 netflow~=0.12.2
+passlib[bcrypt]~=1.7.4  # Для хешування паролів
+python-jose[cryptography]~=3.3.0 # Для JWT
