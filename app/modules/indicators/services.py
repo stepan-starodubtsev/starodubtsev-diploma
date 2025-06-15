@@ -5,7 +5,7 @@ from datetime import datetime, timezone, date as date_type, timedelta
 import json
 import enum
 
-from . import schemas as indicator_schemas
+from . import schemas as indicator_schemas, schemas
 from app.modules.data_ingestion.writers.elasticsearch_writer import ElasticsearchWriter
 from elasticsearch import Elasticsearch, exceptions as es_exceptions
 from pydantic import ValidationError
@@ -510,3 +510,53 @@ class IndicatorService:
             print(f"Error fetching unique tags from Elasticsearch: {e}")
             # В реальному додатку тут варто використовувати логер
             return []
+
+    def find_ioc_by_value(self, es_writer: ElasticsearchWriter, value: str, ioc_type: Optional[schemas.IoCTypeEnum]) -> \
+    List[Dict[str, Any]]:
+        """
+        Знаходить індикатори компрометації (IoC) за їх значенням та, опціонально, за типом.
+
+        :param es_writer: Об'єкт для взаємодії з Elasticsearch.
+        :param value: Значення IoC для пошуку (наприклад, "1.2.3.4" або "example.com").
+        :param ioc_type: Опціональний тип IoC для фільтрації.
+        :return: Список знайдених документів IoC.
+        """
+        # 1. Формуємо базовий запит (query)
+        # Використовуємо "bool" query, що дозволяє комбінувати умови
+        query = {
+            "bool": {
+                "must": [
+                    # Основна умова: шукаємо точне збіг за полем "value.keyword".
+                    # ".keyword" важливе для пошуку точних, неаналізованих значень.
+                    {"term": {"value.keyword": value}}
+                ]
+            }
+        }
+
+        # 2. Додаємо опціональний фільтр за типом IoC
+        if ioc_type:
+            # Додаємо ще одну обов'язкову умову до нашого запиту
+            query["bool"]["must"].append(
+                {"term": {"type.keyword": ioc_type.value}}
+            )
+
+        # 3. Виконуємо пошук
+        # Ми передаємо побудований запит в тілі пошукового запиту Elasticsearch
+        search_body = {"query": query}
+
+        es_client = es_writer.es_client
+        try:
+            response = es_client.search(index="siem-iocs-*", body=search_body)
+        except es_exceptions.NotFoundError:
+            # Індекс не знайдено, повертаємо пустий список
+            return []
+
+        results = []
+        for hit in response['hits']['hits']:
+            # Створюємо новий словник з полів '_source'
+            document = hit['_source']
+            # Додаємо до нього поле 'ioc_id', беручи значення з '_id'
+            document['ioc_id'] = hit['_id']
+            results.append(document)
+
+        return results
