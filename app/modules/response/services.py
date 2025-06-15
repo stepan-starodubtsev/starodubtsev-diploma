@@ -4,6 +4,7 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
 
 from . import schemas as response_schemas
+from ..indicators import schemas as indicator_schemas
 from app.database.postgres_models.response_models import ResponseAction, ResponsePipeline
 from app.database.postgres_models.correlation_models import Offence  # Для отримання даних офенса
 from app.modules.device_interaction.services import DeviceService  # Для виконання дій

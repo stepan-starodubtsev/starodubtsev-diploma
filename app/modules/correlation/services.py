@@ -314,8 +314,8 @@ class CorrelationService:
                     {
                         "range": {
                             "timestamp": {
-                                "gte": "now-7d/d",
-                                "lte": "now/d"
+                                "gte": "now-1h",
+                                "lte": "now"
                             }
                         }
                     },
