@@ -47,7 +47,7 @@ const OffenceDetailsModal = ({ open, onClose, offence, onUpdate, isLoading }) =>
             <DialogTitle>Деталі Офенса ID: {offence.id} - {offence.title}</DialogTitle>
             <DialogContent dividers>
                 <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item size={6}>
                         <Typography variant="subtitle2">Серйозність:</Typography>
                         <FormControl fullWidth margin="dense" size="small">
                             <Select value={severity} onChange={(e) => setSeverity(e.target.value)}>
@@ -55,7 +55,7 @@ const OffenceDetailsModal = ({ open, onClose, offence, onUpdate, isLoading }) =>
                             </Select>
                         </FormControl>
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item size={6}>
                         <Typography variant="subtitle2">Статус:</Typography>
                         <FormControl fullWidth margin="dense" size="small">
                             <Select value={status} onChange={(e) => setStatus(e.target.value)}>
@@ -63,21 +63,27 @@ const OffenceDetailsModal = ({ open, onClose, offence, onUpdate, isLoading }) =>
                             </Select>
                         </FormControl>
                     </Grid>
-                    <Grid item xs={12}>
+                    <Grid item size={12}>
                         <Typography variant="subtitle2">Опис:</Typography>
                         <Typography variant="body2" gutterBottom>{offence.description || 'N/A'}</Typography>
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item size={4}>
                         <Typography variant="subtitle2">ID Правила Кореляції:</Typography>
                         <Typography variant="body2">{offence.correlation_rule_id}</Typography>
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item size={4}>
                         <Typography variant="subtitle2">Час Виявлення:</Typography>
                         <Typography variant="body2">
                             {offence.detected_at ? format(new Date(offence.detected_at), 'yyyy-MM-dd HH:mm:ss') : 'N/A'}
                         </Typography>
                     </Grid>
-                    <Grid item xs={12}>
+                    {offence.attributed_apt_group_ids && offence.attributed_apt_group_ids.length > 0 && (
+                        <Grid item size={4}>
+                            <Typography variant="subtitle2">Пов'язані APT ID:</Typography>
+                            <Typography variant="body2">{offence.attributed_apt_group_ids.join(', ')}</Typography>
+                        </Grid>
+                    )}
+                    <Grid item size={12}>
                         <TextField
                             margin="dense"
                             label="Нотатки Аналітика"
@@ -92,19 +98,13 @@ const OffenceDetailsModal = ({ open, onClose, offence, onUpdate, isLoading }) =>
                     </Grid>
 
                     {offence.triggering_event_summary && (
-                        <Grid item xs={12}>
+                        <Grid item size={12}>
                             {renderJsonDetails("Деталі Події, що Спричинила Офенс", offence.triggering_event_summary)}
                         </Grid>
                     )}
                     {offence.matched_ioc_details && (
-                        <Grid item xs={12}>
+                        <Grid item size={12}>
                             {renderJsonDetails("Деталі IoC, що Спрацював", offence.matched_ioc_details)}
-                        </Grid>
-                    )}
-                    {offence.attributed_apt_group_ids && offence.attributed_apt_group_ids.length > 0 && (
-                        <Grid item xs={12}>
-                            <Typography variant="subtitle2">Пов'язані APT ID:</Typography>
-                            <Typography variant="body2">{offence.attributed_apt_group_ids.join(', ')}</Typography>
                         </Grid>
                     )}
                 </Grid>
