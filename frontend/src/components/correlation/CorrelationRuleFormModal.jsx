@@ -157,7 +157,7 @@ const CorrelationRuleFormModal = ({open, onClose, onSave, initialData, isLoading
                     <Grid item size={12}> <Typography variant="subtitle1" sx={{mt: 1}}>Конфігурація
                         Спрацювання</Typography> </Grid>
 
-                    <Grid item size={5}>
+                    <Grid item size={6}>
                         <Autocomplete
                             multiple
                             options={eventSourceTypeOptions.map(opt => opt.value)} // Або використовуй eventSourceTypeLabels
@@ -180,7 +180,7 @@ const CorrelationRuleFormModal = ({open, onClose, onSave, initialData, isLoading
                     {/* Поля для IOC_MATCH_IP */}
                     {formData.rule_type === CorrelationRuleTypeEnum.IOC_MATCH_IP && (
                         <>
-                            <Grid item size={4}>
+                            <Grid item size={6}>
                                 <FormControl fullWidth margin="dense" variant="outlined"
                                              error={!!errors.event_field_to_match}>
                                     <InputLabel>Поле Події для Зіставлення</InputLabel>
@@ -195,7 +195,7 @@ const CorrelationRuleFormModal = ({open, onClose, onSave, initialData, isLoading
                                                                                 sx={{ml: 2}}>{errors.event_field_to_match}</Typography>}
                                 </FormControl>
                             </Grid>
-                            <Grid item size={3}>
+                            <Grid item size={6}>
                                 <FormControl fullWidth margin="dense" variant="outlined"
                                              error={!!errors.ioc_type_to_match}>
                                     <InputLabel>Тип IoC для Зіставлення</InputLabel>
@@ -203,7 +203,8 @@ const CorrelationRuleFormModal = ({open, onClose, onSave, initialData, isLoading
                                             onChange={handleChange} label="Тип IoC для Зіставлення"
                                             disabled={isLoading}>
                                         <MenuItem value=""><em>Не вибрано</em></MenuItem>
-                                        {iocTypeOptions.filter(t => t.value.includes("-addr")).map(opt => <MenuItem
+                                        {iocTypeOptions.filter(t => t.value.includes("-addr"))
+                                            .map(opt => <MenuItem
                                             key={opt.value} value={opt.value}>{opt.label}</MenuItem>)}
                                     </Select>
                                     {errors.ioc_type_to_match && <Typography color="error" variant="caption"
@@ -283,15 +284,15 @@ const CorrelationRuleFormModal = ({open, onClose, onSave, initialData, isLoading
                         </>
                     )}
 
-                    <Grid item xs={12}> <Typography variant="subtitle1" sx={{mt: 2}}>Генерація Офенса</Typography>
+                    <Grid item size={12}> <Typography variant="subtitle1" sx={{mt: 2}}>Генерація Офенса</Typography>
                     </Grid>
-                    <Grid item xs={12} md={8}>
+                    <Grid item size={6}>
                         <TextField margin="dense" name="generated_offence_title_template"
                                    label="Шаблон Заголовка Офенса" value={formData.generated_offence_title_template}
                                    onChange={handleChange} error={!!errors.generated_offence_title_template}
                                    helperText={errors.generated_offence_title_template} fullWidth disabled={isLoading}/>
                     </Grid>
-                    <Grid item size={4}>
+                    <Grid item size={6}>
                         <FormControl fullWidth margin="dense" variant="outlined"
                                      error={!!errors.generated_offence_severity}>
                             <InputLabel>Серйозність Офенса</InputLabel>
@@ -305,7 +306,7 @@ const CorrelationRuleFormModal = ({open, onClose, onSave, initialData, isLoading
                         </FormControl>
                     </Grid>
 
-                    <Grid item xs={12}>
+                    <Grid item size={12}>
                         <FormControlLabel control={<Checkbox checked={formData.is_enabled} onChange={handleChange}
                                                              name="is_enabled"/>} label="Правило активне"
                                           disabled={isLoading}/>

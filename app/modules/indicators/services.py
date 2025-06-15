@@ -462,7 +462,51 @@ class IndicatorService:
                 count = bucket.get('doc_count')
                 if ioc_type:
                     summary[ioc_type] = count
-        except es_exceptions.ElasticsearchException as e:
+        except es_exceptions.ElasticsearchWarning as e:
             print(f"Error getting IoC summary by type from Elasticsearch: {e}")
 
         return summary
+
+    def get_unique_tags(self, es_writer: ElasticsearchWriter) -> List[str]:
+        """
+        Отримує список унікальних тегів з усіх індикаторів компрометації.
+
+        Для цього використовується 'terms' агрегація в Elasticsearch, яка є
+        дуже ефективним способом для таких завдань.
+
+        :param es_writer: Активний клієнт Elasticsearch.
+        :return: Відсортований список унікальних тегів.
+        """
+
+        es_client: Elasticsearch = es_writer.es_client
+        # Запит до Elasticsearch для агрегації
+        query_body = {
+            "size": 0,  # Нам не потрібні самі документи, лише результати агрегації
+            "aggs": {
+                "unique_tags": {
+                    "terms": {
+                        "field": "tags",  # Поле, по якому групуємо. .keyword не потрібен, бо поле вже keyword.
+                        "size": 1000  # Максимальна кількість унікальних тегів для повернення
+                    }
+                }
+            }
+        }
+
+        try:
+            response = es_client.search(
+                index="siem-iocs-*",  # Шукаємо по всіх індексах з IoC
+                body=query_body
+            )
+
+            # Обробляємо відповідь: витягуємо ключі з "бакетів" агрегації
+            buckets = response.get('aggregations', {}).get('unique_tags', {}).get('buckets', [])
+
+            # Створюємо список з імен тегів
+            tags = [bucket['key'] for bucket in buckets]
+
+            return sorted(tags)
+
+        except Exception as e:
+            print(f"Error fetching unique tags from Elasticsearch: {e}")
+            # В реальному додатку тут варто використовувати логер
+            return []

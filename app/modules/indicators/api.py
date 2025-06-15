@@ -205,3 +205,26 @@ def get_ioc_summary_by_type_api(
         raise HTTPException(status_code=503, detail=f"Elasticsearch error getting IoC summary: {str(es_exc)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get IoC summary: {str(e)}")
+
+
+@router.get("/tags/unique", response_model=List[str])
+def get_unique_indicator_tags(
+        es_writer: ElasticsearchWriter = Depends(get_es_writer),  # Отримуємо клієнт ES через залежність
+        service: IndicatorService = Depends(IndicatorService)  # Отримуємо екземпляр сервісу
+):
+    """
+    Ендпоінт для отримання списку всіх унікальних тегів,
+    що використовуються в індикаторах компрометації.
+
+    Використовується для заповнення випадаючих списків та автодоповнення на фронтенді.
+    """
+    try:
+        # Уся логіка знаходиться в сервісі. Ендпоінт лише викликає потрібний метод.
+        unique_tags = service.get_unique_tags(es_writer=es_writer)
+        return unique_tags
+    except Exception as e:
+        # Базова обробка помилок на випадок, якщо щось піде не так
+        raise HTTPException(
+            status_code=500,
+            detail=f"An internal error occurred while fetching tags: {e}"
+        )
