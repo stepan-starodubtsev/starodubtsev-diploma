@@ -29,28 +29,28 @@ const OffencesSummaryWidget = ({ offences }) => {
         <Box>
             <Typography variant="h6" gutterBottom>Огляд Офенсів</Typography>
             <Grid container spacing={2}>
-                <Grid item xs={6} sm={3}>
+                <Grid item size={3}>
                     <Paper elevation={2} sx={{p: 2, textAlign: 'center', backgroundColor: (theme) => theme.palette.error.dark, color: 'white'}}>
                         <ReportProblemIcon sx={{fontSize: 40}}/>
                         <Typography variant="h4">{criticalCount}</Typography>
                         <Typography variant="caption">Критичні</Typography>
                     </Paper>
                 </Grid>
-                <Grid item xs={6} sm={3}>
+                <Grid item size={3}>
                     <Paper elevation={2} sx={{p: 2, textAlign: 'center', backgroundColor: (theme) => theme.palette.error.main}}>
                         <ErrorOutlineIcon sx={{fontSize: 40}}/>
                         <Typography variant="h4">{highCount}</Typography>
                         <Typography variant="caption">Високої серйозності</Typography>
                     </Paper>
                 </Grid>
-                <Grid item xs={6} sm={3}>
+                <Grid item size={3}>
                     <Paper elevation={2} sx={{p: 2, textAlign: 'center', backgroundColor: (theme) => theme.palette.warning.main}}>
                         <WarningAmberIcon sx={{fontSize: 40}}/>
                         <Typography variant="h4">{mediumCount}</Typography>
                         <Typography variant="caption">Середньої серйозності</Typography>
                     </Paper>
                 </Grid>
-                <Grid item xs={6} sm={3}>
+                <Grid item size={3}>
                     <Paper elevation={2} sx={{p: 2, textAlign: 'center', backgroundColor: (theme) => theme.palette.info.main}}>
                         <InfoOutlinedIcon sx={{fontSize: 40}}/>
                         <Typography variant="h4">{lowCount}</Typography>

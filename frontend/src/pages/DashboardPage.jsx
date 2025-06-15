@@ -49,23 +49,23 @@ const DashboardPage = observer(() => {
                 Головний Дашборд Безпеки
             </Typography>
             <Grid container spacing={3}>
-                <Grid item size={6}>
+                <Grid item size={12}>
                     <OffencesSummaryWidget offences={correlationStore.offences} />
                 </Grid>
                 {/*<Grid item xs={12} md={6} lg={4}>*/}
                 {/*    <IoCTypeDistributionWidget iocs={indicatorStore.iocs} />*/}
                 {/*</Grid>*/}
-                <Grid item xs={12} md={6} lg={4}>
+                <Grid item size={6}>
                     <AptOffencesWidget />
                 </Grid>
-                <Grid item xs={12} lg={8}>
+                <Grid item size={6}>
+                    <TopIoCsWidget /> {/* Дані завантажуються всередині віджета */}
+                </Grid>
+                <Grid item size={12}>
                     <RecentOffencesWidget
                         offences={correlationStore.offences.slice(0, 10)}
                         isLoading={correlationStore.isLoadingOffences}
                     />
-                </Grid>
-                <Grid item xs={12} lg={4}>
-                    <TopIoCsWidget /> {/* Дані завантажуються всередині віджета */}
                 </Grid>
             </Grid>
         </Box>
