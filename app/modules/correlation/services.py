@@ -340,8 +340,8 @@ class CorrelationService:
                 }
 
                 # Відлагоджувальний вивід
-                print(f"DEBUG: Executing event search query for rule '{rule.name}':")
-                print(json.dumps(event_query_body, indent=2))
+                # print(f"DEBUG: Executing event search query for rule '{rule.name}':")
+                # print(json.dumps(event_query_body, indent=2))
 
                 # --- КРОК 3: Виконання запиту та обробка результатів (з мінімальними змінами) ---
                 try:
@@ -447,7 +447,7 @@ class CorrelationService:
                     }
                 }
 
-                print("DEBUG: Executing aggregation query:", json.dumps(threshold_query_body, indent=2))
+                # print("DEBUG: Executing aggregation query:", json.dumps(threshold_query_body, indent=2))
 
                 # --- 3. Виконання запиту та обробка результатів (обробка ключів виправлена) ---
                 try:
