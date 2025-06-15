@@ -14,7 +14,7 @@ export const createCorrelationRule = async (ruleData) => {
     }
 };
 
-export const getAllCorrelationRules = async (skip = 0, limit = 100, onlyEnabled = true) => {
+export const getAllCorrelationRules = async (skip = 0, limit = 100, onlyEnabled = false) => {
     try {
         const response = await apiClient.get(`${CORRELATION_PREFIX}/rules/`, {
             params: { skip, limit, only_enabled: onlyEnabled },

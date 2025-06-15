@@ -37,7 +37,7 @@ def create_correlation_rule_api(
 
 @router.get("/rules/", response_model=List[schemas.CorrelationRuleResponse])
 def read_all_correlation_rules_api(
-        skip: int = Query(0, ge=0), limit: int = Query(100, ge=1), only_enabled: bool = Query(True),
+        skip: int = Query(0, ge=0), limit: int = Query(100, ge=1), only_enabled: bool = Query(False),
         db: Session = Depends(get_db), service: CorrelationService = Depends(CorrelationService)
 ):
     return service.get_all_correlation_rules(db=db, skip=skip, limit=limit, only_enabled=only_enabled)

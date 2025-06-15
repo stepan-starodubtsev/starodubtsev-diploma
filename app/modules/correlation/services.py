@@ -46,7 +46,7 @@ class CorrelationService:
     def get_correlation_rule_by_id(self, db: Session, rule_id: int) -> Optional[CorrelationRule]:
         return db.query(CorrelationRule).filter(CorrelationRule.id == rule_id).first()
 
-    def get_all_correlation_rules(self, db: Session, skip: int = 0, limit: int = 100, only_enabled: bool = True) -> \
+    def get_all_correlation_rules(self, db: Session, skip: int = 0, limit: int = 100, only_enabled: bool = False) -> \
             List[CorrelationRule]:
         query = db.query(CorrelationRule)
         if only_enabled: query = query.filter(CorrelationRule.is_enabled == True)

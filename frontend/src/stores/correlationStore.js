@@ -102,7 +102,7 @@ class CorrelationRuleStore {
 
 
     // --- Actions for Correlation Rules ---
-    async fetchRules(onlyEnabled = true) {
+    async fetchRules(onlyEnabled = false) {
         this.isLoading = true;
         this.error = null;
         try {

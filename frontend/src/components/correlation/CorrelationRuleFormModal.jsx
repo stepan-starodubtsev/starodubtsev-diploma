@@ -188,7 +188,7 @@ const CorrelationRuleFormModal = ({open, onClose, onSave, initialData, isLoading
                                             onChange={handleChange} label="Поле Події для Зіставлення"
                                             disabled={isLoading}>
                                         <MenuItem value=""><em>Не вибрано</em></MenuItem>
-                                        {EventFieldToMatchLabels.filter(f => f.value.includes("_IP")).map(opt =>
+                                        {EventFieldToMatchLabels.filter(f => f.value.includes("_ip")).map(opt =>
                                             <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>)}
                                     </Select>
                                     {errors.event_field_to_match && <Typography color="error" variant="caption"
@@ -246,13 +246,13 @@ const CorrelationRuleFormModal = ({open, onClose, onSave, initialData, isLoading
                     {/* Поля для THRESHOLD правил */}
                     {(formData.rule_type === CorrelationRuleTypeEnum.THRESHOLD_LOGIN_FAILURES || formData.rule_type === CorrelationRuleTypeEnum.THRESHOLD_DATA_EXFILTRATION) && (
                         <>
-                            <Grid item size={4}>
+                            <Grid item size={6}>
                                 <TextField margin="dense" name="threshold_count" label="Поріг (N або сума байт)"
                                            type="number" value={formData.threshold_count || ''} onChange={handleChange}
                                            error={!!errors.threshold_count} helperText={errors.threshold_count}
                                            fullWidth disabled={isLoading}/>
                             </Grid>
-                            <Grid item size={4}>
+                            <Grid item size={6}>
                                 <TextField margin="dense" name="threshold_time_window_minutes"
                                            label="Часове Вікно (хвилин)" type="number"
                                            value={formData.threshold_time_window_minutes || ''} onChange={handleChange}
@@ -260,7 +260,7 @@ const CorrelationRuleFormModal = ({open, onClose, onSave, initialData, isLoading
                                            helperText={errors.threshold_time_window_minutes} fullWidth
                                            disabled={isLoading}/>
                             </Grid>
-                            <Grid item size={4}>
+                            <Grid item size={6}>
                                 <Autocomplete
                                     multiple
                                     options={Object.values(EventFieldToMatchTypeEnum)}
