@@ -92,5 +92,11 @@ export const loadIoCsSources = async () => {
     }
 }
 
-// Можна додати unlinkIoCFromApt, якщо є такий ендпоінт
-// export const unlinkIoCToApt = async (iocEsId, aptGroupId) => { ... };
+export const loadIoCsUniqueTags = async () => {
+    try {
+        const response = await apiClient.get(`${IOC_PREFIX}/tags/unique`);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || error;
+    }
+}

@@ -39,7 +39,17 @@ const initialFormState = {
     attributed_apt_group_ids: [],
 };
 
-const IndicatorFormModal = ({open, onClose, onSave, initialData, isLoading, formError, aptGroupStore, sourceNames}) => { // Додано aptGroupStore
+const IndicatorFormModal = ({
+                                open,
+                                onClose,
+                                onSave,
+                                initialData,
+                                isLoading,
+                                formError,
+                                aptGroupStore,
+                                sourceNames,
+                                allPossibleTags
+                            }) => { // Додано aptGroupStore
     const [formData, setFormData] = useState(initialFormState);
     const [errors, setErrors] = useState({});
     const [currentTag, setCurrentTag] = useState('');
@@ -76,14 +86,6 @@ const IndicatorFormModal = ({open, onClose, onSave, initialData, isLoading, form
         const {name, value, type, checked} = event.target;
         setFormData(prev => ({...prev, [name]: type === 'checkbox' ? checked : value}));
         if (errors[name]) setErrors(prev => ({...prev, [name]: ''}));
-    };
-
-    const handleTagsChange = (event, newValue) => { // Для Autocomplete (якщо використовується для тегів)
-        setFormData(prev => ({...prev, tags: newValue}));
-    };
-
-    const handleAptIdsChange = (event, newValue) => { // Для Autocomplete APT IDs
-        setFormData(prev => ({...prev, attributed_apt_group_ids: newValue.map(apt => apt.id)}));
     };
 
     const handleAddTag = () => {
@@ -179,25 +181,41 @@ const IndicatorFormModal = ({open, onClose, onSave, initialData, isLoading, form
                            value={formData.confidence} onChange={handleChange} error={!!errors.confidence}
                            helperText={errors.confidence} fullWidth disabled={isLoading}/>
 
-                <Box my={2}>
-                    <Typography variant="subtitle2">Теги</Typography>
-                    {formData.tags.map((tag, index) => (
-                        <Chip key={index} label={tag} onDelete={() => handleDeleteTag(tag)} sx={{mr: 0.5, mb: 0.5}}/>
-                    ))}
-                    <Box display="flex" alignItems="center" mt={1}>
-                        <TextField size="small" label="Додати тег" value={currentTag}
-                                   onChange={(e) => setCurrentTag(e.target.value)} sx={{mr: 1}} disabled={isLoading}
-                                   onKeyDown={(e) => {
-                                       if (e.key === 'Enter') {
-                                           e.preventDefault();
-                                           handleAddTag();
-                                       }
-                                   }}
+                <Autocomplete
+                    multiple
+                    freeSolo
+                    id="form-tags-autocomplete"
+                    value={formData.tags || []}
+                    onChange={(event, newValue) => {
+                        setFormData(prev => ({
+                            ...prev,
+                            tags: newValue
+                        }));
+                    }}
+                    options={allPossibleTags || []}
+
+                    renderTags={(tagValue, getTagProps) =>
+                        tagValue.map((option, index) => (
+                            <Chip
+                                variant="outlined"
+                                label={option}
+                                {...getTagProps({ index })}
+                            />
+                        ))
+                    }
+
+                    // Як виглядає поле вводу
+                    renderInput={(params) => (
+                        <TextField
+                            {...params}
+                            variant="outlined"
+                            margin="normal"
+                            label="Теги"
+                            placeholder="Додайте або виберіть теги"
+                            disabled={isLoading}
                         />
-                        <Button size="small" onClick={handleAddTag} variant="outlined" disabled={isLoading}>Додати
-                            Тег</Button>
-                    </Box>
-                </Box>
+                    )}
+                />
 
                 {aptGroupStore && // Показуємо вибір APT тільки якщо aptGroupStore передано
                     <Autocomplete

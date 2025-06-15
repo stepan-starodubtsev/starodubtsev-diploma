@@ -8,7 +8,8 @@ import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 
 import correlationStore from '../stores/correlationStore';
 import CorrelationRuleTable from '../components/correlation/CorrelationRuleTable'; // Створимо
-import CorrelationRuleFormModal from '../components/correlation/CorrelationRuleFormModal'; // Створимо
+import CorrelationRuleFormModal from '../components/correlation/CorrelationRuleFormModal';
+import indicatorStore from "../stores/indicatorStore.js"; // Створимо
 
 const CorrelationRulesPage = observer(() => {
     const [formModalOpen, setFormModalOpen] = useState(false);
@@ -17,8 +18,7 @@ const CorrelationRulesPage = observer(() => {
 
     useEffect(() => {
         correlationStore.fetchRules();
-        // Можливо, також завантажувати список офенсів, якщо вони відображаються на цій сторінці
-        // correlationStore.fetchOffences();
+        indicatorStore.loadUniqueTags();
     }, []);
 
     const handleOpenCreateModal = () => { setEditingRule(null); setFormModalOpen(true); };
@@ -125,6 +125,7 @@ const CorrelationRulesPage = observer(() => {
                     initialData={editingRule}
                     isLoading={correlationStore.isLoading}
                     formError={correlationStore.error && formModalOpen ? String(correlationStore.error) : null}
+                    allPossibleTags={indicatorStore.uniqueTags}
                 />
             )}
             <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>

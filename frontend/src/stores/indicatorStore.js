@@ -1,5 +1,5 @@
 // src/stores/indicatorStore.js
-import { makeObservable, observable, action, runInAction, computed } from 'mobx';
+import {makeObservable, observable, action, runInAction, computed} from 'mobx';
 import {
     getAllIoCs,
     getIoCsCreatedToday,
@@ -8,7 +8,7 @@ import {
     getIoCById,
     updateIoC,
     deleteIoC,
-    linkIoCToApt, loadIoCsSources,
+    linkIoCToApt, loadIoCsSources, loadIoCsUniqueTags,
 } from '../api/indicatorApi';
 // Може знадобитися для отримання списку APT для вибору при редагуванні IoC
 // import aptGroupStore from './aptGroupStore';
@@ -50,6 +50,7 @@ class IndicatorStore {
             setPagination: action,
             setSearchFilters: action,
             loadSourceNames: action,
+            loadUniqueTags: action,
 
             totalIoCs: computed,
             displayableIoCs: computed, // Може фільтрувати/сортувати iocs
@@ -90,7 +91,7 @@ class IndicatorStore {
     async loadIoCs() {
         this.isLoading = true;
         this.error = null;
-        const { page, rowsPerPage, searchValue, searchType, filterDate } = this.pagination;
+        const {page, rowsPerPage, searchValue, searchType, filterDate} = this.pagination;
         const skip = page * rowsPerPage;
         const limit = rowsPerPage;
 
@@ -166,10 +167,17 @@ class IndicatorStore {
         try {
             const updatedIoC = await updateIoC(iocEsId, iocUpdateData);
             runInAction(() => {
-                this.loadIoCs(); // Оновити список
-                if (this.currentIoC && this.currentIoC.ioc_id === iocEsId) {
-                    this.currentIoC = updatedIoC;
+                const foundedIocIndex = this.iocs.findIndex(
+                    ioc => ioc.ioc_id === iocEsId
+                );
+
+                if (foundedIocIndex !== -1) {
+                    this.iocs[foundedIocIndex] = updatedIoC;
+                } else {
+                    this.loadIoCs()
+                    console.warn(`Could not find IoC with ID ${iocEsId} in the local store to update.`)
                 }
+
                 this.operationStatus = `IoC ID "${iocEsId}" успішно оновлено.`;
                 this.isLoading = false;
             });
@@ -240,6 +248,18 @@ class IndicatorStore {
             const sources = await loadIoCsSources(); // Запит до вашого нового ендпоінту
             runInAction(() => {
                 this.sourceNames = sources.sort(); // Зберігаємо та сортуємо
+            });
+        } catch (error) {
+            console.error("Failed to load source names", error);
+            // Можна обробити помилку, якщо потрібно
+        }
+    }
+
+    async loadUniqueTags() {
+        try {
+            const uniqueTags = await loadIoCsUniqueTags(); // Запит до вашого нового ендпоінту
+            runInAction(() => {
+                this.uniqueTags = uniqueTags.sort(); // Зберігаємо та сортуємо
             });
         } catch (error) {
             console.error("Failed to load source names", error);

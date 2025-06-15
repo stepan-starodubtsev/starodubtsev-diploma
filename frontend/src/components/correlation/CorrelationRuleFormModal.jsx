@@ -1,5 +1,5 @@
 // src/components/correlation/CorrelationRuleFormModal.jsx
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
     Dialog, DialogActions, DialogContent, DialogTitle, TextField, Button,
     Select, MenuItem, FormControl, InputLabel, Checkbox, FormControlLabel,
@@ -10,7 +10,10 @@ import {
     CorrelationRuleTypeLabels, EventFieldToMatchLabels, OffenceSeverityLabels // Потрібно додати їх в constants.js
 } from '../../constants'; // Або з correlation/schemas
 
-const iocTypeOptions = Object.entries(IoCTypeToMatchEnum).map(([key, value]) => ({ value, label: key.replace("_", " ") }));
+const iocTypeOptions = Object.entries(IoCTypeToMatchEnum).map(([key, value]) => ({
+    value,
+    label: key.replace("_", " ")
+}));
 // Event source types - це можуть бути твої event_category або event_type з CommonEventSchema
 const eventSourceTypeOptions = [
     {value: "netflow", label: "NetFlow/Flow"},
@@ -39,10 +42,9 @@ const initialFormState = {
     generated_offence_severity: OffenceSeverityEnum.MEDIUM,
 };
 
-const CorrelationRuleFormModal = ({ open, onClose, onSave, initialData, isLoading, formError }) => {
+const CorrelationRuleFormModal = ({open, onClose, onSave, initialData, isLoading, formError, allPossibleTags}) => {
     const [formData, setFormData] = useState(initialFormState);
     const [errors, setErrors] = useState({});
-    const [currentIocTag, setCurrentIocTag] = useState('');
 
 
     useEffect(() => {
@@ -72,23 +74,13 @@ const CorrelationRuleFormModal = ({ open, onClose, onSave, initialData, isLoadin
     }, [initialData, open]);
 
     const handleChange = (event) => {
-        const { name, value, type, checked } = event.target;
-        setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
-        if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
+        const {name, value, type, checked} = event.target;
+        setFormData(prev => ({...prev, [name]: type === 'checkbox' ? checked : value}));
+        if (errors[name]) setErrors(prev => ({...prev, [name]: ''}));
     };
 
     const handleMultiSelectChange = (name, newValue) => {
         setFormData(prev => ({...prev, [name]: newValue}));
-    };
-
-    const handleAddIocTag = () => {
-        if (currentIocTag.trim() && !formData.ioc_tags_match.includes(currentIocTag.trim())) {
-            setFormData(prev => ({ ...prev, ioc_tags_match: [...prev.ioc_tags_match, currentIocTag.trim()] }));
-            setCurrentIocTag('');
-        }
-    };
-    const handleDeleteIocTag = (tagToDelete) => {
-        setFormData(prev => ({ ...prev, ioc_tags_match: prev.ioc_tags_match.filter(tag => tag !== tagToDelete) }));
     };
 
 
@@ -104,8 +96,8 @@ const CorrelationRuleFormModal = ({ open, onClose, onSave, initialData, isLoadin
             if (!formData.event_field_to_match) tempErrors.event_field_to_match = "Поле події є обов'язковим для IoC правил";
             if (!formData.ioc_type_to_match) tempErrors.ioc_type_to_match = "Тип IoC є обов'язковим для IoC правил";
         } else if (formData.rule_type === CorrelationRuleTypeEnum.THRESHOLD_LOGIN_FAILURES || formData.rule_type === CorrelationRuleTypeEnum.THRESHOLD_DATA_EXFILTRATION) {
-            if (formData.threshold_count === null || formData.threshold_count <=0) tempErrors.threshold_count = "Поріг має бути > 0";
-            if (formData.threshold_time_window_minutes === null || formData.threshold_time_window_minutes <=0) tempErrors.threshold_time_window_minutes = "Часове вікно має бути > 0";
+            if (formData.threshold_count === null || formData.threshold_count <= 0) tempErrors.threshold_count = "Поріг має бути > 0";
+            if (formData.threshold_time_window_minutes === null || formData.threshold_time_window_minutes <= 0) tempErrors.threshold_time_window_minutes = "Часове вікно має бути > 0";
             if (!formData.aggregation_fields || formData.aggregation_fields.length === 0) tempErrors.aggregation_fields = "Поля агрегації є обов'язковими для порогових правил";
         }
         setErrors(tempErrors);
@@ -115,7 +107,7 @@ const CorrelationRuleFormModal = ({ open, onClose, onSave, initialData, isLoadin
     const handleSubmit = async (event) => {
         event.preventDefault();
         if (validate()) {
-            const dataToSave = { ...formData };
+            const dataToSave = {...formData};
             // Очистимо непотрібні поля залежно від rule_type перед відправкою
             if (dataToSave.rule_type !== CorrelationRuleTypeEnum.IOC_MATCH_IP) {
                 dataToSave.event_field_to_match = null;
@@ -134,30 +126,38 @@ const CorrelationRuleFormModal = ({ open, onClose, onSave, initialData, isLoadin
     };
 
     return (
-        <Dialog open={open} onClose={onClose} PaperProps={{ component: 'form', onSubmit: handleSubmit }} maxWidth="lg" fullWidth>
+        <Dialog open={open} onClose={onClose} PaperProps={{component: 'form', onSubmit: handleSubmit}} maxWidth="lg"
+                fullWidth>
             <DialogTitle>{initialData ? 'Редагувати Правило Кореляції' : 'Додати Нове Правило Кореляції'}</DialogTitle>
             <DialogContent>
-                {formError && <Alert severity="error" sx={{ mb: 2 }}>{formError}</Alert>}
+                {formError && <Alert severity="error" sx={{mb: 2}}>{formError}</Alert>}
                 <Grid container spacing={2}>
-                    <Grid item xs={12} md={6}>
-                        <TextField margin="dense" name="name" label="Назва Правила" value={formData.name} onChange={handleChange} error={!!errors.name} helperText={errors.name} fullWidth disabled={isLoading}/>
+                    <Grid item size={6}>
+                        <TextField margin="dense" name="name" label="Назва Правила" value={formData.name}
+                                   onChange={handleChange} error={!!errors.name} helperText={errors.name} fullWidth
+                                   disabled={isLoading}/>
                     </Grid>
-                    <Grid item xs={12} md={6}>
+                    <Grid item size={6}>
                         <FormControl fullWidth margin="dense" variant="outlined" error={!!errors.rule_type}>
                             <InputLabel id="rule-type-label">Тип Правила</InputLabel>
-                            <Select labelId="rule-type-label" name="rule_type" value={formData.rule_type} onChange={handleChange} label="Тип Правила" disabled={isLoading}>
-                                {CorrelationRuleTypeLabels.map(opt => <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>)}
+                            <Select labelId="rule-type-label" name="rule_type" value={formData.rule_type}
+                                    onChange={handleChange} label="Тип Правила" disabled={isLoading}>
+                                {CorrelationRuleTypeLabels.map(opt => <MenuItem key={opt.value}
+                                                                                value={opt.value}>{opt.label}</MenuItem>)}
                             </Select>
-                            {errors.rule_type && <Typography color="error" variant="caption" sx={{ml:2}}>{errors.rule_type}</Typography>}
+                            {errors.rule_type && <Typography color="error" variant="caption"
+                                                             sx={{ml: 2}}>{errors.rule_type}</Typography>}
                         </FormControl>
                     </Grid>
-                    <Grid item xs={12}>
-                        <TextField margin="dense" name="description" label="Опис" value={formData.description} onChange={handleChange} multiline rows={2} fullWidth disabled={isLoading}/>
+                    <Grid item size={12}>
+                        <TextField margin="dense" name="description" label="Опис" value={formData.description}
+                                   onChange={handleChange} multiline rows={2} fullWidth disabled={isLoading}/>
                     </Grid>
 
-                    <Grid item xs={12}> <Typography variant="subtitle1" sx={{mt:1}}>Конфігурація Спрацювання</Typography> </Grid>
+                    <Grid item size={12}> <Typography variant="subtitle1" sx={{mt: 1}}>Конфігурація
+                        Спрацювання</Typography> </Grid>
 
-                    <Grid item xs={12} md={4}>
+                    <Grid item size={5}>
                         <Autocomplete
                             multiple
                             options={eventSourceTypeOptions.map(opt => opt.value)} // Або використовуй eventSourceTypeLabels
@@ -166,11 +166,13 @@ const CorrelationRuleFormModal = ({ open, onClose, onSave, initialData, isLoadin
                             onChange={(event, newValue) => handleMultiSelectChange('event_source_type', newValue)}
                             renderTags={(value, getTagProps) =>
                                 value.map((option, index) => (
-                                    <Chip variant="outlined" label={eventSourceTypeOptions.find(o => o.value === option)?.label || option} {...getTagProps({ index })} />
+                                    <Chip variant="outlined"
+                                          label={eventSourceTypeOptions.find(o => o.value === option)?.label || option} {...getTagProps({index})} />
                                 ))
                             }
                             renderInput={(params) => (
-                                <TextField {...params} variant="outlined" label="Типи Подій Джерела" placeholder="Виберіть типи" margin="dense" disabled={isLoading}/>
+                                <TextField {...params} variant="outlined" label="Типи Подій Джерела"
+                                           placeholder="Виберіть типи" margin="dense" disabled={isLoading}/>
                             )}
                         />
                     </Grid>
@@ -178,39 +180,64 @@ const CorrelationRuleFormModal = ({ open, onClose, onSave, initialData, isLoadin
                     {/* Поля для IOC_MATCH_IP */}
                     {formData.rule_type === CorrelationRuleTypeEnum.IOC_MATCH_IP && (
                         <>
-                            <Grid item xs={12} md={4}>
-                                <FormControl fullWidth margin="dense" variant="outlined" error={!!errors.event_field_to_match}>
+                            <Grid item size={4}>
+                                <FormControl fullWidth margin="dense" variant="outlined"
+                                             error={!!errors.event_field_to_match}>
                                     <InputLabel>Поле Події для Зіставлення</InputLabel>
-                                    <Select name="event_field_to_match" value={formData.event_field_to_match || ''} onChange={handleChange} label="Поле Події для Зіставлення" disabled={isLoading}>
+                                    <Select name="event_field_to_match" value={formData.event_field_to_match || ''}
+                                            onChange={handleChange} label="Поле Події для Зіставлення"
+                                            disabled={isLoading}>
                                         <MenuItem value=""><em>Не вибрано</em></MenuItem>
-                                        {EventFieldToMatchLabels.filter(f => f.value.includes("_IP")).map(opt => <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>)}
+                                        {EventFieldToMatchLabels.filter(f => f.value.includes("_IP")).map(opt =>
+                                            <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>)}
                                     </Select>
-                                    {errors.event_field_to_match && <Typography color="error" variant="caption" sx={{ml:2}}>{errors.event_field_to_match}</Typography>}
+                                    {errors.event_field_to_match && <Typography color="error" variant="caption"
+                                                                                sx={{ml: 2}}>{errors.event_field_to_match}</Typography>}
                                 </FormControl>
                             </Grid>
-                            <Grid item xs={12} md={4}>
-                                <FormControl fullWidth margin="dense" variant="outlined" error={!!errors.ioc_type_to_match}>
+                            <Grid item size={3}>
+                                <FormControl fullWidth margin="dense" variant="outlined"
+                                             error={!!errors.ioc_type_to_match}>
                                     <InputLabel>Тип IoC для Зіставлення</InputLabel>
-                                    <Select name="ioc_type_to_match" value={formData.ioc_type_to_match || ''} onChange={handleChange} label="Тип IoC для Зіставлення" disabled={isLoading}>
+                                    <Select name="ioc_type_to_match" value={formData.ioc_type_to_match || ''}
+                                            onChange={handleChange} label="Тип IoC для Зіставлення"
+                                            disabled={isLoading}>
                                         <MenuItem value=""><em>Не вибрано</em></MenuItem>
-                                        {iocTypeOptions.filter(t => t.value.includes("-addr")).map(opt => <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>)}
+                                        {iocTypeOptions.filter(t => t.value.includes("-addr")).map(opt => <MenuItem
+                                            key={opt.value} value={opt.value}>{opt.label}</MenuItem>)}
                                     </Select>
-                                    {errors.ioc_type_to_match && <Typography color="error" variant="caption" sx={{ml:2}}>{errors.ioc_type_to_match}</Typography>}
+                                    {errors.ioc_type_to_match && <Typography color="error" variant="caption"
+                                                                             sx={{ml: 2}}>{errors.ioc_type_to_match}</Typography>}
                                 </FormControl>
                             </Grid>
-                            <Grid item xs={12} md={6}>
-                                <TextField margin="dense" name="ioc_min_confidence" label="Мін. Впевненість IoC (0-100)" type="number" value={formData.ioc_min_confidence || ''} onChange={handleChange} fullWidth disabled={isLoading}/>
-                            </Grid>
-                            <Grid item xs={12} md={6}>
-                                <Typography variant="subtitle2" sx={{mt:2, mb:1}}>Теги IoC для Зіставлення (AND)</Typography>
-                                {formData.ioc_tags_match.map((tag, index) => (
-                                    <Chip key={index} label={tag} onDelete={() => handleDeleteIocTag(tag)} sx={{ mr: 0.5, mb: 0.5 }} />
-                                ))}
-                                <Box display="flex" alignItems="center" mt={1}>
-                                    <TextField size="small" label="Додати тег IoC" value={currentIocTag} onChange={(e) => setCurrentIocTag(e.target.value)} sx={{mr:1}} disabled={isLoading}
-                                               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddIocTag();}}}/>
-                                    <Button size="small" onClick={handleAddIocTag} variant="outlined" disabled={isLoading}>Додати Тег</Button>
-                                </Box>
+                            <Grid item size={6}>
+                                <Autocomplete
+                                    multiple
+                                    freeSolo
+                                    value={formData.ioc_tags_match || []}
+                                    onChange={(event, newValue) => {
+                                        setFormData(prev => ({
+                                            ...prev,
+                                            ioc_tags_match: newValue
+                                        }));
+                                    }}
+                                    options={allPossibleTags || []}
+                                    renderTags={(value, getTagProps) =>
+                                        value.map((option, index) => (
+                                            <Chip variant="outlined" label={option} {...getTagProps({index})} />
+                                        ))
+                                    }
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            variant="outlined"
+                                            margin="normal"
+                                            label="Теги IoC для Зіставлення (AND)"
+                                            placeholder="Додайте або виберіть теги"
+                                            disabled={isLoading}
+                                        />
+                                    )}
+                                />
                             </Grid>
                         </>
                     )}
@@ -218,13 +245,21 @@ const CorrelationRuleFormModal = ({ open, onClose, onSave, initialData, isLoadin
                     {/* Поля для THRESHOLD правил */}
                     {(formData.rule_type === CorrelationRuleTypeEnum.THRESHOLD_LOGIN_FAILURES || formData.rule_type === CorrelationRuleTypeEnum.THRESHOLD_DATA_EXFILTRATION) && (
                         <>
-                            <Grid item xs={12} md={4}>
-                                <TextField margin="dense" name="threshold_count" label="Поріг (N або сума байт)" type="number" value={formData.threshold_count || ''} onChange={handleChange} error={!!errors.threshold_count} helperText={errors.threshold_count} fullWidth disabled={isLoading}/>
+                            <Grid item size={4}>
+                                <TextField margin="dense" name="threshold_count" label="Поріг (N або сума байт)"
+                                           type="number" value={formData.threshold_count || ''} onChange={handleChange}
+                                           error={!!errors.threshold_count} helperText={errors.threshold_count}
+                                           fullWidth disabled={isLoading}/>
                             </Grid>
-                            <Grid item xs={12} md={4}>
-                                <TextField margin="dense" name="threshold_time_window_minutes" label="Часове Вікно (хвилин)" type="number" value={formData.threshold_time_window_minutes || ''} onChange={handleChange} error={!!errors.threshold_time_window_minutes} helperText={errors.threshold_time_window_minutes} fullWidth disabled={isLoading}/>
+                            <Grid item size={4}>
+                                <TextField margin="dense" name="threshold_time_window_minutes"
+                                           label="Часове Вікно (хвилин)" type="number"
+                                           value={formData.threshold_time_window_minutes || ''} onChange={handleChange}
+                                           error={!!errors.threshold_time_window_minutes}
+                                           helperText={errors.threshold_time_window_minutes} fullWidth
+                                           disabled={isLoading}/>
                             </Grid>
-                            <Grid item xs={12} md={4}>
+                            <Grid item size={4}>
                                 <Autocomplete
                                     multiple
                                     options={Object.values(EventFieldToMatchTypeEnum)}
@@ -233,40 +268,54 @@ const CorrelationRuleFormModal = ({ open, onClose, onSave, initialData, isLoadin
                                     onChange={(event, newValue) => handleMultiSelectChange('aggregation_fields', newValue)}
                                     renderTags={(value, getTagProps) =>
                                         value.map((optionValue, index) => (
-                                            <Chip variant="outlined" label={EventFieldToMatchLabels.find(l => l.value === optionValue)?.label || optionValue} {...getTagProps({ index })} />
+                                            <Chip variant="outlined"
+                                                  label={EventFieldToMatchLabels.find(l => l.value === optionValue)?.label || optionValue} {...getTagProps({index})} />
                                         ))
                                     }
                                     renderInput={(params) => (
-                                        <TextField {...params} variant="outlined" label="Поля Агрегації" placeholder="Виберіть поля" margin="dense" error={!!errors.aggregation_fields} helperText={errors.aggregation_fields} disabled={isLoading}/>
+                                        <TextField {...params} variant="outlined" label="Поля Агрегації"
+                                                   placeholder="Виберіть поля" margin="dense"
+                                                   error={!!errors.aggregation_fields}
+                                                   helperText={errors.aggregation_fields} disabled={isLoading}/>
                                     )}
                                 />
                             </Grid>
                         </>
                     )}
 
-                    <Grid item xs={12}> <Typography variant="subtitle1" sx={{mt:2}}>Генерація Офенса</Typography> </Grid>
-                    <Grid item xs={12} md={8}>
-                        <TextField margin="dense" name="generated_offence_title_template" label="Шаблон Заголовка Офенса" value={formData.generated_offence_title_template} onChange={handleChange} error={!!errors.generated_offence_title_template} helperText={errors.generated_offence_title_template} fullWidth disabled={isLoading}/>
+                    <Grid item xs={12}> <Typography variant="subtitle1" sx={{mt: 2}}>Генерація Офенса</Typography>
                     </Grid>
-                    <Grid item xs={12} md={4}>
-                        <FormControl fullWidth margin="dense" variant="outlined" error={!!errors.generated_offence_severity}>
+                    <Grid item xs={12} md={8}>
+                        <TextField margin="dense" name="generated_offence_title_template"
+                                   label="Шаблон Заголовка Офенса" value={formData.generated_offence_title_template}
+                                   onChange={handleChange} error={!!errors.generated_offence_title_template}
+                                   helperText={errors.generated_offence_title_template} fullWidth disabled={isLoading}/>
+                    </Grid>
+                    <Grid item size={4}>
+                        <FormControl fullWidth margin="dense" variant="outlined"
+                                     error={!!errors.generated_offence_severity}>
                             <InputLabel>Серйозність Офенса</InputLabel>
-                            <Select name="generated_offence_severity" value={formData.generated_offence_severity} onChange={handleChange} label="Серйозність Офенса" disabled={isLoading}>
-                                {OffenceSeverityLabels.map(opt => <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>)}
+                            <Select name="generated_offence_severity" value={formData.generated_offence_severity}
+                                    onChange={handleChange} label="Серйозність Офенса" disabled={isLoading}>
+                                {OffenceSeverityLabels.map(opt => <MenuItem key={opt.value}
+                                                                            value={opt.value}>{opt.label}</MenuItem>)}
                             </Select>
-                            {errors.generated_offence_severity && <Typography color="error" variant="caption" sx={{ml:2}}>{errors.generated_offence_severity}</Typography>}
+                            {errors.generated_offence_severity && <Typography color="error" variant="caption"
+                                                                              sx={{ml: 2}}>{errors.generated_offence_severity}</Typography>}
                         </FormControl>
                     </Grid>
 
                     <Grid item xs={12}>
-                        <FormControlLabel control={<Checkbox checked={formData.is_enabled} onChange={handleChange} name="is_enabled" />} label="Правило активне" disabled={isLoading} />
+                        <FormControlLabel control={<Checkbox checked={formData.is_enabled} onChange={handleChange}
+                                                             name="is_enabled"/>} label="Правило активне"
+                                          disabled={isLoading}/>
                     </Grid>
                 </Grid>
             </DialogContent>
-            <DialogActions sx={{p:'0 24px 20px 24px'}}>
+            <DialogActions sx={{p: '0 24px 20px 24px'}}>
                 <Button onClick={onClose} disabled={isLoading}>Скасувати</Button>
                 <Button type="submit" variant="contained" disabled={isLoading}>
-                    {isLoading ? <CircularProgress size={24} /> : (initialData ? 'Зберегти' : 'Створити')}
+                    {isLoading ? <CircularProgress size={24}/> : (initialData ? 'Зберегти' : 'Створити')}
                 </Button>
             </DialogActions>
         </Dialog>

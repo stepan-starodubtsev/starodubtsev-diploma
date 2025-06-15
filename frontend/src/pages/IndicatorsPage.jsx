@@ -25,6 +25,7 @@ const IndicatorsPage = observer(() => {
         indicatorStore.loadIoCs(); // Початкове завантаження
         aptGroupStore.fetchAptGroups();
         indicatorStore.loadSourceNames();
+        indicatorStore.loadUniqueTags();
     }, []);
 
     const handleSearch = () => {
@@ -202,6 +203,7 @@ const IndicatorsPage = observer(() => {
                     isLoading={indicatorStore.isLoading}
                     formError={indicatorStore.error && formModalOpen ? String(indicatorStore.error) : null}
                     sourceNames={indicatorStore.sourceNames} // NEW: Передаємо список джерел
+                    allPossibleTags={indicatorStore.uniqueTags}
                 />
             )}
             {linkingIoC && (
