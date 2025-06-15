@@ -8,7 +8,7 @@ import {
     getIoCById,
     updateIoC,
     deleteIoC,
-    linkIoCToApt,
+    linkIoCToApt, loadIoCsSources,
 } from '../api/indicatorApi';
 // Може знадобитися для отримання списку APT для вибору при редагуванні IoC
 // import aptGroupStore from './aptGroupStore';
@@ -49,6 +49,7 @@ class IndicatorStore {
             clearCurrentIoC: action,
             setPagination: action,
             setSearchFilters: action,
+            loadSourceNames: action,
 
             totalIoCs: computed,
             displayableIoCs: computed, // Може фільтрувати/сортувати iocs
@@ -231,6 +232,18 @@ class IndicatorStore {
                 this.isLoading = false;
             });
             throw error;
+        }
+    }
+
+    async loadSourceNames() {
+        try {
+            const sources = await loadIoCsSources(); // Запит до вашого нового ендпоінту
+            runInAction(() => {
+                this.sourceNames = sources.sort(); // Зберігаємо та сортуємо
+            });
+        } catch (error) {
+            console.error("Failed to load source names", error);
+            // Можна обробити помилку, якщо потрібно
         }
     }
 }

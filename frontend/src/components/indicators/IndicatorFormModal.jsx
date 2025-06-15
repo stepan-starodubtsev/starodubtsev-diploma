@@ -24,7 +24,7 @@ import {IoCTypeEnum} from '../../constants'; // Припускаємо, що IoC
 // import aptGroupStore from '../../stores/aptGroupStore'; // Якщо потрібен список APT для вибору
 
 // Для прикладу, список типів IoC для Select
-const iocTypeOptions = Object.entries(IoCTypeEnum).map(([key, value]) => ({ value, label: key.replace("_", " ") }));
+const iocTypeOptions = Object.entries(IoCTypeEnum).map(([key, value]) => ({value, label: key.replace("_", " ")}));
 
 const initialFormState = {
     value: '',
@@ -39,7 +39,7 @@ const initialFormState = {
     attributed_apt_group_ids: [],
 };
 
-const IndicatorFormModal = ({ open, onClose, onSave, initialData, isLoading, formError, aptGroupStore }) => { // Додано aptGroupStore
+const IndicatorFormModal = ({open, onClose, onSave, initialData, isLoading, formError, aptGroupStore, sourceNames}) => { // Додано aptGroupStore
     const [formData, setFormData] = useState(initialFormState);
     const [errors, setErrors] = useState({});
     const [currentTag, setCurrentTag] = useState('');
@@ -73,27 +73,27 @@ const IndicatorFormModal = ({ open, onClose, onSave, initialData, isLoading, for
     }, [initialData, open]);
 
     const handleChange = (event) => {
-        const { name, value, type, checked } = event.target;
-        setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
-        if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
+        const {name, value, type, checked} = event.target;
+        setFormData(prev => ({...prev, [name]: type === 'checkbox' ? checked : value}));
+        if (errors[name]) setErrors(prev => ({...prev, [name]: ''}));
     };
 
     const handleTagsChange = (event, newValue) => { // Для Autocomplete (якщо використовується для тегів)
-        setFormData(prev => ({ ...prev, tags: newValue }));
+        setFormData(prev => ({...prev, tags: newValue}));
     };
 
     const handleAptIdsChange = (event, newValue) => { // Для Autocomplete APT IDs
-        setFormData(prev => ({ ...prev, attributed_apt_group_ids: newValue.map(apt => apt.id) }));
+        setFormData(prev => ({...prev, attributed_apt_group_ids: newValue.map(apt => apt.id)}));
     };
 
     const handleAddTag = () => {
         if (currentTag.trim() && !formData.tags.includes(currentTag.trim())) {
-            setFormData(prev => ({ ...prev, tags: [...prev.tags, currentTag.trim()] }));
+            setFormData(prev => ({...prev, tags: [...prev.tags, currentTag.trim()]}));
             setCurrentTag('');
         }
     };
     const handleDeleteTag = (tagToDelete) => {
-        setFormData(prev => ({ ...prev, tags: prev.tags.filter(tag => tag !== tagToDelete) }));
+        setFormData(prev => ({...prev, tags: prev.tags.filter(tag => tag !== tagToDelete)}));
     };
 
 
@@ -111,7 +111,8 @@ const IndicatorFormModal = ({ open, onClose, onSave, initialData, isLoading, for
     const handleSubmit = async (event) => {
         event.preventDefault();
         if (validate()) {
-            const dataToSave = { ...formData,
+            const dataToSave = {
+                ...formData,
                 first_seen: formData.first_seen ? new Date(formData.first_seen).toISOString() : null,
                 last_seen: formData.last_seen ? new Date(formData.last_seen).toISOString() : null,
             };
@@ -122,41 +123,79 @@ const IndicatorFormModal = ({ open, onClose, onSave, initialData, isLoading, for
         }
     };
 
-    const aptOptions = aptGroupStore ? aptGroupStore.aptGroups.map(apt => ({ id: apt.id, name: apt.name })) : [];
+    const aptOptions = aptGroupStore ? aptGroupStore.aptGroups.map(apt => ({id: apt.id, name: apt.name})) : [];
     const selectedAptObjects = formData.attributed_apt_group_ids
         .map(id => aptOptions.find(opt => opt.id === id))
         .filter(Boolean);
 
 
     return (
-        <Dialog open={open} onClose={onClose} PaperProps={{ component: 'form', onSubmit: handleSubmit }} maxWidth="md" fullWidth>
+        <Dialog open={open} onClose={onClose} PaperProps={{component: 'form', onSubmit: handleSubmit}} maxWidth="md"
+                fullWidth>
             <DialogTitle>{initialData ? 'Редагувати Індикатор (IoC)' : 'Додати Новий Індикатор (IoC)'}</DialogTitle>
             <DialogContent>
-                {formError && <Alert severity="error" sx={{ mb: 2 }}>{formError}</Alert>}
-                <TextField margin="dense" name="value" label="Значення IoC" value={formData.value} onChange={handleChange} error={!!errors.value} helperText={errors.value} fullWidth disabled={isLoading}/>
+                {formError && <Alert severity="error" sx={{mb: 2}}>{formError}</Alert>}
+                <TextField margin="dense" name="value" label="Значення IoC" value={formData.value}
+                           onChange={handleChange} error={!!errors.value} helperText={errors.value} fullWidth
+                           disabled={isLoading}/>
 
                 <FormControl fullWidth margin="dense" variant="outlined" error={!!errors.type}>
                     <InputLabel id="ioc-type-select-label">Тип IoC</InputLabel>
-                    <Select labelId="ioc-type-select-label" name="type" value={formData.type} onChange={handleChange} label="Тип IoC" disabled={isLoading}>
+                    <Select labelId="ioc-type-select-label" name="type" value={formData.type} onChange={handleChange}
+                            label="Тип IoC" disabled={isLoading}>
                         {iocTypeOptions.map(opt => <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>)}
                     </Select>
-                    {errors.type && <Typography color="error" variant="caption" sx={{ml:2}}>{errors.type}</Typography>}
+                    {errors.type && <Typography color="error" variant="caption" sx={{ml: 2}}>{errors.type}</Typography>}
                 </FormControl>
 
-                <TextField margin="dense" name="description" label="Опис" value={formData.description} onChange={handleChange} multiline rows={2} fullWidth disabled={isLoading}/>
-                <TextField margin="dense" name="source_name" label="Джерело (назва)" value={formData.source_name} onChange={handleChange} fullWidth disabled={isLoading}/>
-                <TextField margin="dense" name="confidence" label="Впевненість (0-100)" type="number" value={formData.confidence} onChange={handleChange} error={!!errors.confidence} helperText={errors.confidence} fullWidth disabled={isLoading}/>
+                <TextField margin="dense" name="description" label="Опис" value={formData.description}
+                           onChange={handleChange} multiline rows={2} fullWidth disabled={isLoading}/>
+                <FormControl fullWidth variant="outlined">
+                    <InputLabel id="source-name-select-label">Джерело</InputLabel>
+                    <Select
+                        labelId="source-name-select-label"
+                        id="source-name-select"
+                        name="source_name"
+                        value={formData.source_name}
+                        onChange={handleChange}
+                        label="Джерело"
+                    >
+                        <MenuItem value="">
+                            <em>Не вибрано</em>
+                        </MenuItem>
+                        {/* Рендеримо список отриманих джерел */}
+                        {sourceNames.map((source) => (
+                            <MenuItem
+                                key={source.id || source.name} // Використовуємо унікальний id або name для ключа
+                                value={source.name} // Значенням елемента буде рядок source.name
+                            >
+                                {source.name} {/* А текстом для відображення - також source.name */}
+                            </MenuItem>
+                        ))}
+
+                    </Select>
+                </FormControl>
+                <TextField margin="dense" name="confidence" label="Впевненість (0-100)" type="number"
+                           value={formData.confidence} onChange={handleChange} error={!!errors.confidence}
+                           helperText={errors.confidence} fullWidth disabled={isLoading}/>
 
                 <Box my={2}>
                     <Typography variant="subtitle2">Теги</Typography>
                     {formData.tags.map((tag, index) => (
-                        <Chip key={index} label={tag} onDelete={() => handleDeleteTag(tag)} sx={{ mr: 0.5, mb: 0.5 }} />
+                        <Chip key={index} label={tag} onDelete={() => handleDeleteTag(tag)} sx={{mr: 0.5, mb: 0.5}}/>
                     ))}
                     <Box display="flex" alignItems="center" mt={1}>
-                        <TextField size="small" label="Додати тег" value={currentTag} onChange={(e) => setCurrentTag(e.target.value)} sx={{mr:1}} disabled={isLoading}
-                                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddTag();}}}
+                        <TextField size="small" label="Додати тег" value={currentTag}
+                                   onChange={(e) => setCurrentTag(e.target.value)} sx={{mr: 1}} disabled={isLoading}
+                                   onKeyDown={(e) => {
+                                       if (e.key === 'Enter') {
+                                           e.preventDefault();
+                                           handleAddTag();
+                                       }
+                                   }}
                         />
-                        <Button size="small" onClick={handleAddTag} variant="outlined" disabled={isLoading}>Додати Тег</Button>
+                        <Button size="small" onClick={handleAddTag} variant="outlined" disabled={isLoading}>Додати
+                            Тег</Button>
                     </Box>
                 </Box>
 
@@ -168,7 +207,10 @@ const IndicatorFormModal = ({ open, onClose, onSave, initialData, isLoading, for
                         getOptionLabel={(option) => `${option.name} (ID: ${option.id})`}
                         value={selectedAptObjects} // Використовуємо об'єкти для відображення
                         onChange={(event, newValueObjects) => {
-                            setFormData(prev => ({ ...prev, attributed_apt_group_ids: newValueObjects.map(obj => obj.id) }));
+                            setFormData(prev => ({
+                                ...prev,
+                                attributed_apt_group_ids: newValueObjects.map(obj => obj.id)
+                            }));
                         }}
                         isOptionEqualToValue={(option, value) => option.id === value.id}
                         renderInput={(params) => (
@@ -183,24 +225,29 @@ const IndicatorFormModal = ({ open, onClose, onSave, initialData, isLoading, for
                         )}
                         renderTags={(value, getTagProps) =>
                             value.map((option, index) => (
-                                <Chip variant="outlined" label={`${option.name}`} {...getTagProps({ index })} />
+                                <Chip variant="outlined" label={`${option.name}`} {...getTagProps({index})} />
                             ))
                         }
                     />
                 }
 
-                <TextField margin="dense" name="first_seen" label="Вперше Помічено (опціонально)" type="datetime-local" value={formData.first_seen} onChange={handleChange} fullWidth InputLabelProps={{ shrink: true }} sx={{mt:1}} disabled={isLoading}/>
-                <TextField margin="dense" name="last_seen" label="Остання Активність (опціонально)" type="datetime-local" value={formData.last_seen} onChange={handleChange} fullWidth InputLabelProps={{ shrink: true }} disabled={isLoading}/>
+                <TextField margin="dense" name="first_seen" label="Вперше Помічено (опціонально)" type="datetime-local"
+                           value={formData.first_seen} onChange={handleChange} fullWidth
+                           InputLabelProps={{shrink: true}} sx={{mt: 1}} disabled={isLoading}/>
+                <TextField margin="dense" name="last_seen" label="Остання Активність (опціонально)"
+                           type="datetime-local" value={formData.last_seen} onChange={handleChange} fullWidth
+                           InputLabelProps={{shrink: true}} disabled={isLoading}/>
 
                 <FormControlLabel
-                    control={<Checkbox checked={formData.is_active} onChange={handleChange} name="is_active" color="primary" disabled={isLoading} />}
-                    label="Індикатор активний" sx={{mt:1}}
+                    control={<Checkbox checked={formData.is_active} onChange={handleChange} name="is_active"
+                                       color="primary" disabled={isLoading}/>}
+                    label="Індикатор активний" sx={{mt: 1}}
                 />
             </DialogContent>
-            <DialogActions sx={{p:'0 24px 20px 24px'}}>
+            <DialogActions sx={{p: '0 24px 20px 24px'}}>
                 <Button onClick={onClose} disabled={isLoading}>Скасувати</Button>
                 <Button type="submit" variant="contained" disabled={isLoading}>
-                    {isLoading ? <CircularProgress size={24} /> : (initialData ? 'Зберегти' : 'Створити')}
+                    {isLoading ? <CircularProgress size={24}/> : (initialData ? 'Зберегти' : 'Створити')}
                 </Button>
             </DialogActions>
         </Dialog>

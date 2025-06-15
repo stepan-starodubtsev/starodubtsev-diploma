@@ -83,5 +83,14 @@ export const linkIoCToApt = async (iocEsId, aptGroupId) => {
     }
 };
 
+export const loadIoCsSources = async () => {
+    try {
+        const response = await apiClient.get(`ioc-sources/?skip=0&limit=100`);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || error;
+    }
+}
+
 // Можна додати unlinkIoCFromApt, якщо є такий ендпоінт
 // export const unlinkIoCToApt = async (iocEsId, aptGroupId) => { ... };

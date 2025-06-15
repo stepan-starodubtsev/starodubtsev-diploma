@@ -24,6 +24,7 @@ const IndicatorsPage = observer(() => {
     useEffect(() => {
         indicatorStore.loadIoCs(); // Початкове завантаження
         aptGroupStore.fetchAptGroups();
+        indicatorStore.loadSourceNames();
     }, []);
 
     const handleSearch = () => {
@@ -200,6 +201,7 @@ const IndicatorsPage = observer(() => {
                     initialData={editingIoC}
                     isLoading={indicatorStore.isLoading}
                     formError={indicatorStore.error && formModalOpen ? String(indicatorStore.error) : null}
+                    sourceNames={indicatorStore.sourceNames} // NEW: Передаємо список джерел
                 />
             )}
             {linkingIoC && (
