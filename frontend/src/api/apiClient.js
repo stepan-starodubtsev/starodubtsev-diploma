@@ -1,29 +1,28 @@
-// src/api/apiClient.js
+// frontend/src/api/apiClient.js
 import axios from 'axios';
 
-// Базовий URL вашого API. Краще винести в .env файл
-// Наприклад, REACT_APP_API_BASE_URL=http://localhost:8000/api/v1 (якщо є префікс /api/v1)
-// Або REACT_APP_API_BASE_URL=http://localhost:8000 (якщо префікси в роутерах)
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-
 const apiClient = axios.create({
-    baseURL: API_BASE_URL,
-    headers: {
-        'Content-Type': 'application/json',
-        // Тут можна буде додати заголовки для автентифікації, наприклад:
-        // 'Authorization': `Bearer ${token}`
-    },
+    baseURL: 'http://localhost:8000', // URL вашого бекенду
 });
 
-// (Опціонально) Інтерцептори для обробки відповідей або помилок глобально
+// Додаємо interceptor для обробки помилок 401 Unauthorized
 apiClient.interceptors.response.use(
     (response) => response,
     (error) => {
-        // Тут можна обробляти помилки централізовано
-        // Наприклад, якщо помилка 401 (неавторизований), перенаправляти на логін
-        console.error('API Error:', error.response || error.message);
+        if (error.response && error.response.status === 401) {
+            // Якщо сервер повернув 401, це означає, що токен недійсний.
+            // Викидаємо користувача з системи.
+            // Прямий виклик authStore.logout() тут може створити циклічну залежність.
+            // Краще повідомити додаток про це і обробити в іншому місці.
+            // Наприклад, можна видалити токен і перезавантажити сторінку.
+            localStorage.removeItem('token');
+            if (window.location.pathname !== '/login') {
+                window.location.href = '/login';
+            }
+        }
         return Promise.reject(error);
     }
 );
+
 
 export default apiClient;

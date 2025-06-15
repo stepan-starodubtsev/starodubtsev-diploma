@@ -20,14 +20,17 @@ import LoginPage from "./pages/LoginPage.jsx"; // <--- НОВИЙ ХЕДЕР
 
 // Приклади сторінок (створи їх у src/pages/)
 // const ProfilePage = () => <div>Профіль Користувача</div>; // Заглушка
-
+import ProtectedRoute from './components/auth/ProtectedRoute'; // Імпорт ProtectedRoute
+import authStore from './stores/authStore';
+import UsersPage from "./pages/UsersPage.jsx";
+import {observer} from "mobx-react-lite";
 
 export const ColorModeContext = createContext({
     toggleColorMode: () => {
     }
 });
 
-function App() {
+const App = observer(() => {
     const [mode, setMode] = useState('dark'); // <--- Змінено на 'light' за замовчуванням
 
     const colorMode = useMemo(
@@ -47,7 +50,7 @@ function App() {
                 <CssBaseline/>
                 <BrowserRouter>
                     <Box sx={{display: 'flex', flexDirection: 'column', height: '100vh'}}> {/* Змінено на column */}
-                        <Header/> {/* <--- Додано Хедер */}
+                        {authStore.isAuthenticated && <Header />}
 
                         <Box
                             component="main"
@@ -59,19 +62,26 @@ function App() {
                             }}
                         >
                             <Routes>
-                                <Route path="/" element={<DashboardPage/>}/>
-                                <Route path="/devices" element={<DevicesPage/>}/>
-                                <Route path="/ioc-sources" element={<IoCSourcesPage/>}/>
-                                <Route path="/apt-groups" element={<APTGroupsPage/>}/>
-                                <Route path="/iocs" element={<IndicatorsPage/>}/>
-                                <Route path="/correlation-rules" element={<CorrelationRulesPage/>}/>
-                                <Route path="/offences" element={<OffencesPage/>}/>
-                                <Route path="/responses" element={<ResponsePage/>}/>
-                                <Route path="/profile" element={<ProfilePage/>}/>
-                                <Route path="/login" element={<LoginPage/>}/>
+                                <Route path="/login" element={<LoginPage />} />
 
-                                {/* Приклад редиректу, якщо шлях не знайдено */}
-                                <Route path="*" element={<Navigate to="/" replace/>}/>
+                                <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+                                <Route path="/devices" element={<ProtectedRoute><DevicesPage /></ProtectedRoute>} />
+                                <Route path="/indicators" element={<ProtectedRoute><IndicatorsPage /></ProtectedRoute>} />
+                                <Route path="/correlation" element={<ProtectedRoute><CorrelationRulesPage /></ProtectedRoute>} />
+                                <Route path="/offences" element={<ProtectedRoute><OffencesPage /></ProtectedRoute>} />
+                                <Route path="/response" element={<ProtectedRoute><ResponsePage /></ProtectedRoute>} />
+                                <Route path="/apt-groups" element={<ProtectedRoute><APTGroupsPage /></ProtectedRoute>} />
+                                <Route path="/ioc-sources" element={<ProtectedRoute><IoCSourcesPage /></ProtectedRoute>} />
+                                <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+
+                                {/* Маршрут тільки для адмінів */}
+                                <Route path="/users" element={
+                                    <ProtectedRoute adminOnly={true}>
+                                        <UsersPage />
+                                    </ProtectedRoute>
+                                } />
+
+                                <Route path="*" element={<Navigate to="/" replace />} />
                             </Routes>
                         </Box>
                     </Box>
@@ -79,7 +89,7 @@ function App() {
             </ThemeProvider>
         </ColorModeContext.Provider>
     );
-}
+});
 
 export default App;
 
